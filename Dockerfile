@@ -34,15 +34,13 @@ COPY . .
 RUN npm run build \
     && npm prune --omit=dev --ignore-scripts \
     && mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache \
-    && chmod -R 777 storage bootstrap/cache \
-    && php artisan route:cache \
-    && php artisan view:cache
+    && chmod -R 777 storage bootstrap/cache
 
 # Web server config
 COPY Caddyfile /Caddyfile
 
-# Startup script: config cache + migrate + server
-RUN printf '#!/bin/sh\nset -e\nphp artisan config:cache\nphp artisan event:cache\nphp artisan migrate --force\nexec frankenphp run --config /Caddyfile\n' > /start.sh \
+# Startup script: cache + migrate + server (semua artisan optimize di sini, bukan build time)
+RUN printf '#!/bin/sh\nset -e\nphp artisan config:cache\nphp artisan event:cache\nphp artisan route:cache\nphp artisan view:cache\nphp artisan migrate --force\nexec frankenphp run --config /Caddyfile\n' > /start.sh \
     && chmod +x /start.sh
 
 CMD ["/start.sh"]
