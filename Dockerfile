@@ -34,13 +34,15 @@ COPY . .
 RUN npm run build \
     && npm prune --omit=dev --ignore-scripts \
     && mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache \
-    && chmod -R 777 storage bootstrap/cache
+    && chmod -R 777 storage bootstrap/cache \
+    && rm -rf public/storage \
+    && ln -sf /app/storage/app/public /app/public/storage
 
 # Web server config
 COPY Caddyfile /Caddyfile
 
 # Startup script: cache + migrate + server
-RUN printf '#!/bin/sh\nset -e\nmkdir -p /app/storage/framework/{sessions,views,cache,testing} /app/storage/logs /app/bootstrap/cache\nchmod -R 777 /app/storage /app/bootstrap/cache\nphp artisan storage:link --force\nphp artisan config:cache\nphp artisan event:cache\nphp artisan route:cache\nphp artisan migrate --force\nexec frankenphp run --config /Caddyfile\n' > /start.sh \
+RUN printf '#!/bin/sh\nset -e\nmkdir -p /app/storage/framework/{sessions,views,cache,testing} /app/storage/logs /app/bootstrap/cache\nchmod -R 777 /app/storage /app/bootstrap/cache\nphp artisan config:cache\nphp artisan event:cache\nphp artisan route:cache\nphp artisan migrate --force\nexec frankenphp run --config /Caddyfile\n' > /start.sh \
     && chmod +x /start.sh
 
 CMD ["/start.sh"]
