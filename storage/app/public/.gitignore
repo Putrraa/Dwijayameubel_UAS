@@ -1,2 +1,8 @@
 *
 !.gitignore
+!barang/
+!barang/**
+!kategori/
+!kategori/**
+!custom_orders/
+!custom_orders/**

@@ -40,7 +40,7 @@ RUN npm run build \
 COPY Caddyfile /Caddyfile
 
 # Startup script: cache + migrate + server
-RUN printf '#!/bin/sh\nset -e\nmkdir -p /app/storage/framework/{sessions,views,cache,testing} /app/storage/logs /app/bootstrap/cache\nchmod -R 777 /app/storage /app/bootstrap/cache\nphp artisan config:cache\nphp artisan event:cache\nphp artisan route:cache\nphp artisan migrate --force\nexec frankenphp run --config /Caddyfile\n' > /start.sh \
+RUN printf '#!/bin/sh\nset -e\nmkdir -p /app/storage/framework/{sessions,views,cache,testing} /app/storage/logs /app/bootstrap/cache\nchmod -R 777 /app/storage /app/bootstrap/cache\nphp artisan storage:link --force\nphp artisan config:cache\nphp artisan event:cache\nphp artisan route:cache\nphp artisan migrate --force\nexec frankenphp run --config /Caddyfile\n' > /start.sh \
     && chmod +x /start.sh
 
 CMD ["/start.sh"]
