@@ -44,7 +44,7 @@
                      style="cursor: pointer;"
                      onclick="showProductModal(
                             '{{ addslashes($item->nama_barang) }}',
-                            '{{ asset($item->gambar) }}',
+                            '{{ asset('storage/barang/' . $item->gambar)}}',
                             '{{ number_format($item->harga, 0, ',', '.') }}',
                             {{ $item->harga }},
                             '{{ addslashes($item->kategori->nama_kategori ?? 'Tanpa Kategori') }}', {{-- TAMBAH KATEGORI --}}
@@ -54,7 +54,7 @@
                             '{{ addslashes($item->deskripsi ?? '-') }}',
                             {{ $item->id }}
                         )">
-                    <img src="{{ asset($item->gambar) }}"
+                    <img src="{{ asset('storage/barang/'.$item->gambar)}}"
                         class="img-fluid product-thumbnail best-seller-img"
                         alt="{{ $item->nama_barang }}">
                     <h3 class="product-title">{{ $item->nama_barang }}</h3>

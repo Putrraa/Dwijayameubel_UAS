@@ -59,19 +59,11 @@ class barangcontroller extends Controller
         $data->stok        = $request->stok;
         $data->deskripsi   = $request->deskripsi;
 
-        if ($request->hasFile('gambar')) {
+         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
-            $namaFile = time() . '_' . $file->getClientOriginalName();
-
-            $tujuan = public_path('storage/barang');
-
-            if (!file_exists($tujuan)) {
-                mkdir($tujuan, 0755, true);
-            }
-
-            $file->move($tujuan, $namaFile);
-
-            $data->gambar = 'storage/barang/' . $namaFile;
+            $namaFile = time() . '_' . $file->getClientOriginalName(); 
+            $file->storeAs('barang', $namaFile, 'public');
+            $data->gambar = $namaFile;
         }
 
         $data->save();
@@ -96,20 +88,11 @@ class barangcontroller extends Controller
         ]);
 
         $gambarPath = null;
-
         if ($request->hasFile('gambar')) {
-            $file = $request->file('gambar');
-            $namaFile = time() . '_' . $file->getClientOriginalName();
-
-            $tujuan = public_path('storage/kategori');
-
-            if (!file_exists($tujuan)) {
-                mkdir($tujuan, 0755, true);
-            }
-
-            $file->move($tujuan, $namaFile);
-
-            $gambarPath = 'storage/kategori/' . $namaFile;
+            $file       = $request->file('gambar');
+            $namaFile   = time() . '_' . $file->getClientOriginalName();
+            $file->storeAs('kategori', $namaFile, 'public');
+            $gambarPath = 'kategori/' . $namaFile;
         }
 
         Kategori::create([
@@ -173,7 +156,7 @@ class barangcontroller extends Controller
             $file = $request->file('gambar');
             $namaFile = time() . '_' . $file->getClientOriginalName(); 
             $file->storeAs('barang', $namaFile, 'public');
-            $barang->gambar = 'barang/' . $namaFile;
+            $barang->gambar = $namaFile;
         }
 
         $barang->save();
@@ -313,21 +296,12 @@ class barangcontroller extends Controller
             'gambar'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $gambarPath = null;
-
+       $gambarPath = null;
         if ($request->hasFile('gambar')) {
-            $file = $request->file('gambar');
+            $file     = $request->file('gambar');
             $namaFile = time() . '_' . $file->getClientOriginalName();
-
-            $tujuan = public_path('storage/custom');
-
-            if (!file_exists($tujuan)) {
-                mkdir($tujuan, 0755, true);
-            }
-
-            $file->move($tujuan, $namaFile);
-
-            $gambarPath = 'storage/custom/' . $namaFile;
+            $file->storeAs('custom_orders', $namaFile, 'public');
+            $gambarPath = 'custom_orders/' . $namaFile;
         }
 
         CustomOrder::create([

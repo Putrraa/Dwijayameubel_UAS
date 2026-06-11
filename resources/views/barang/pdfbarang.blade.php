@@ -39,7 +39,7 @@
                 <td> {{ $data->stock}}</td>
                 <td>
                 @if($data->gambar)
-                    <img src="{{ asset('storage/'.$data->gambar) }}" width="80">
+                    <img src="{{ asset('storage/barang/'.$data->gambar) }}" width="80">
                 @else
                     -
                 @endif

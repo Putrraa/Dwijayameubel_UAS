@@ -94,7 +94,7 @@
 
                                 @if($item->gambar)
 
-                                    <img src="{{ asset($item->gambar) }}"
+                                    <img src="{{ asset('storage/' . $item->gambar) }}"
                                          width="90"
                                          class="rounded shadow-sm">
 

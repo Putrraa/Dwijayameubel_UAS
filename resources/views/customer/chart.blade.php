@@ -57,7 +57,7 @@
                                 <tr>
                                     <td class="ps-4 py-3">
                                         <div class="d-flex align-items-center gap-3">
-                                            <img src="{{ asset($item->barang->gambar) }}"
+                                            <img src="{{ asset('storage/barang/'.$item->barang->gambar)  }}"
                                                  width="60"
                                                  height="60"
                                                  class="rounded shadow-sm"
@@ -188,7 +188,7 @@
                                 <div class="d-flex align-items-center gap-3 mb-3 pb-3"
                                      style="border-bottom: 1px dashed #d8cfc8;">
 
-                                    <img src="{{ asset($item->barang->gambar) }}"
+                                    <img src="{{ asset('storage/barang/'.$item->barang->gambar) }}"
                                          width="60"
                                          height="60"
                                          class="rounded"

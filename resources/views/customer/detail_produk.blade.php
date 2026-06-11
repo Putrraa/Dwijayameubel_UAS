@@ -16,7 +16,7 @@
     <div class="row">
         
         <div class="col-lg-6">
-            <img src="{{ asset($data->gambar) }}" class="img-fluid" alt="{{ $data->nama_barang }}">
+            <img src="{{ asset('storage/' . $data->gambar) }}" class="img-fluid" alt="{{ $data->nama_barang }}">
             <h1 class="mt-3">{{ $data->nama_barang }}</h1>
             <p class="lead">Rp. {{ number_format($data->harga, 0, ',', '.') }}</p>
             <p>Stok Tersedia: <strong>{{ $data->stok }}</strong></p>

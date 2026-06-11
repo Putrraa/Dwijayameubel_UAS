@@ -73,7 +73,7 @@
                             </td>
                             <td class="text-center">
                                 @if($data->gambar)
-                                    <img src="{{ asset($data->gambar) }}" class="rounded shadow-sm border" width="60" height="60" style="object-fit: cover;">
+                                    <img src="{{ asset('storage/barang/'.$data->gambar) }}" class="rounded shadow-sm border" width="60" height="60" style="object-fit: cover;">
                                 @else
                                     <div class="bg-light rounded d-flex align-items-center justify-content-center mx-auto" style="width: 60px; height: 60px;">
                                         <i class="bi bi-image text-muted"></i>

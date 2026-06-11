@@ -41,7 +41,7 @@
                         @php
                             // Jika ada gambar di DB pakai itu, jika tidak pakai default
                             $gambar = $cat->gambar
-                                ? $cat->gambar
+                                ? 'storage/' . $cat->gambar
                                 : 'template_customer/images/asset_cat/img_default.jpg';
                         @endphp
                         <img src="{{ asset($gambar) }}" class="category-img" alt="{{ $cat->nama_kategori }}">
@@ -104,7 +104,7 @@
                         style="cursor: pointer;"
                         onclick="showProductModal(
                             '{{ addslashes($item->nama_barang) }}',
-                            '{{ asset($item->gambar) }}',
+                            '{{ asset('storage/barang/' . $item->gambar) }}',
                             '{{ number_format($item->harga, 0, ',', '.') }}',
                             {{ $item->harga }},
                             '{{ addslashes($item->kategori->nama_kategori ?? 'Tanpa Kategori') }}', {{-- TAMBAH KATEGORI --}}
@@ -114,7 +114,7 @@
                             '{{ addslashes($item->deskripsi ?? '-') }}',
                             {{ $item->id }}
                         )">
-                        <img src="{{ asset($item->gambar) }}"
+                        <img src="{{ asset('storage/barang/' . $item->gambar) }}"
                             class="product-img" alt="{{ $item->nama_barang }}">
                     </div>
 
@@ -126,7 +126,7 @@
                     <button type="button" class="btn btn-add-cart w-100"
                             onclick="showProductModal(
                                 '{{ addslashes($item->nama_barang) }}',
-                                '{{ asset($item->gambar) }}',
+                                '{{ asset('storage/barang/' . $item->gambar) }}',
                                 '{{ number_format($item->harga, 0, ',', '.') }}',
                                 {{ $item->harga }},
                                 '{{ addslashes($item->kategori->nama_kategori ?? 'Tanpa Kategori') }}',

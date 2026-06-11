@@ -77,7 +77,7 @@
                                 @if($data->gambar)
                                     <div class="text-center">
                                         {{-- Perbaikan path storage agar gambar muncul --}}
-                                        <img src="{{ asset($data->gambar) }}" class="rounded border mb-1" width="80" height="80" style="object-fit: cover;">
+                                        <img src="{{ asset('storage/barang/' . $data->gambar) }}" class="rounded border mb-1" width="80" height="80" style="object-fit: cover;">
                                         <div class="small text-muted">Foto Lama</div>
                                     </div>
                                 @endif

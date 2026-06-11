@@ -384,7 +384,7 @@
 
                                         @if($custom->gambar)
 
-                                        <img src="{{ asset($custom->gambar) }}"
+                                        <img src="{{ asset('storage/' . $custom->gambar) }}"
                                              width="80"
                                              class="rounded mt-2 border">
 

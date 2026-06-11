@@ -38,7 +38,7 @@
                                 style="cursor: pointer;"
                                 onclick="showProductModal(
                                     '{{ addslashes($item->nama_barang) }}',
-                                    '{{ asset($item->gambar) }}',
+                                    '{{ asset('storage/barang/' . $item->gambar) }}',
                                     '{{ number_format($item->harga, 0, ',', '.') }}',
                                     {{ $item->harga }},
                                     '{{ addslashes($item->kategori->nama_kategori ?? 'Tanpa Kategori') }}',
@@ -48,7 +48,7 @@
                                     '{{ addslashes($item->deskripsi ?? '-') }}',
                                     {{ $item->id }}
                                 )">
-                                <img src="{{ asset($item->gambar) }}"
+                                <img src="{{ asset('storage/barang/' . $item->gambar) }}"
                                     class="product-img" alt="{{ $item->nama_barang }}">
                             </div>
 
@@ -61,7 +61,7 @@
                             <button type="button" class="btn btn-add-cart w-100"
                                 onclick="showProductModal(
                                     '{{ addslashes($item->nama_barang) }}',
-                                    '{{ asset($item->gambar) }}',
+                                    '{{ asset('storage/barang/' .  $item->gambar) }}',
                                     '{{ number_format($item->harga, 0, ',', '.') }}',
                                     {{ $item->harga }},
                                     '{{ addslashes($item->kategori->nama_kategori ?? 'Tanpa Kategori') }}',
