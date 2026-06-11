@@ -39,8 +39,8 @@ RUN npm run build \
 # Web server config
 COPY Caddyfile /Caddyfile
 
-# Startup script: cache + migrate + server (semua artisan optimize di sini, bukan build time)
-RUN printf '#!/bin/sh\nset -e\nphp artisan config:cache\nphp artisan event:cache\nphp artisan route:cache\nphp artisan view:cache\nphp artisan migrate --force\nexec frankenphp run --config /Caddyfile\n' > /start.sh \
+# Startup script: cache + migrate + server
+RUN printf '#!/bin/sh\nset -e\nphp artisan config:cache\nphp artisan event:cache\nphp artisan route:cache\nphp artisan migrate --force\nexec frankenphp run --config /Caddyfile\n' > /start.sh \
     && chmod +x /start.sh
 
 CMD ["/start.sh"]
