@@ -25,7 +25,7 @@ Route::post('/barang/update/{id}', [ApiBarangController::class, 'update']);
 // Hapus barang dari APK
 Route::post('/barang/delete/{id}', [ApiBarangController::class, 'destroy']);
 
-
+Route::get('/barang/{id}', [ApiBarangController::class, 'show']);
 // ==============================
 // API DATA TAMBAHAN UNTUK FORM APK
 // ==============================

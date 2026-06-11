@@ -104,7 +104,7 @@
                         style="cursor: pointer;"
                         onclick="showProductModal(
                             '{{ addslashes($item->nama_barang) }}',
-                            '{{ asset('storage/barang/' . $item->gambar) }}',
+                            '{{ $item->gambar ? asset('storage/barang/' . $item->gambar) : asset('template_customer/images/img-grid-1.jpg') }}',
                             '{{ number_format($item->harga, 0, ',', '.') }}',
                             {{ $item->harga }},
                             '{{ addslashes($item->kategori->nama_kategori ?? 'Tanpa Kategori') }}', {{-- TAMBAH KATEGORI --}}
@@ -114,7 +114,7 @@
                             '{{ addslashes($item->deskripsi ?? '-') }}',
                             {{ $item->id }}
                         )">
-                        <img src="{{ asset('storage/barang/' . $item->gambar) }}"
+                        <img src="{{ $item->gambar ? asset('storage/barang/' . $item->gambar) : asset('template_customer/images/img-grid-1.jpg') }}"
                             class="product-img" alt="{{ $item->nama_barang }}">
                     </div>
 
@@ -126,7 +126,7 @@
                     <button type="button" class="btn btn-add-cart w-100"
                             onclick="showProductModal(
                                 '{{ addslashes($item->nama_barang) }}',
-                                '{{ asset('storage/barang/' . $item->gambar) }}',
+                                '{{ $item->gambar ? asset('storage/barang/' . $item->gambar) : asset('template_customer/images/img-grid-1.jpg') }}',
                                 '{{ number_format($item->harga, 0, ',', '.') }}',
                                 {{ $item->harga }},
                                 '{{ addslashes($item->kategori->nama_kategori ?? 'Tanpa Kategori') }}',

@@ -15,7 +15,7 @@ class ApiBarangController extends Controller
             ->latest()
             ->get()
             ->map(function ($item) {
-                $item->gambar_url = $item->gambar ? asset($item->gambar) : null;
+                $item->gambar_url = $item->gambar ? asset('storage/barang/' . $item->gambar) : null;
                 return $item;
             });
 
@@ -36,7 +36,7 @@ class ApiBarangController extends Controller
             'stok'        => 'required|integer',
             'ukuran'      => 'nullable|string|max:255',
             'deskripsi'   => 'nullable|string',
-            'gambar'      => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'gambar'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $gambarPath = null;
@@ -44,16 +44,8 @@ class ApiBarangController extends Controller
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
             $namaFile = time() . '_' . $file->getClientOriginalName();
-
-            $tujuan = public_path('storage/barang');
-
-            if (!file_exists($tujuan)) {
-                mkdir($tujuan, 0755, true);
-            }
-
-            $file->move($tujuan, $namaFile);
-
-            $gambarPath = 'storage/barang/' . $namaFile;
+            $file->storeAs('barang', $namaFile, 'public');
+            $gambarPath = $namaFile;
         }
 
         $barang = new barang();
@@ -71,7 +63,7 @@ class ApiBarangController extends Controller
             'status' => true,
             'message' => 'Barang berhasil ditambahkan',
             'data' => $barang,
-            'gambar_url' => asset($gambarPath)
+            'gambar_url' => $gambarPath ? asset('storage/barang/' . $gambarPath) : null
         ]);
     }
 
@@ -91,22 +83,14 @@ class ApiBarangController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
-            if ($barang->gambar && file_exists(public_path($barang->gambar))) {
-                unlink(public_path($barang->gambar));
+            if ($barang->gambar && file_exists(storage_path('app/public/barang/' . $barang->gambar))) {
+                unlink(storage_path('app/public/barang/' . $barang->gambar));
             }
 
             $file = $request->file('gambar');
-            $namaFile = time() . '_' . $file->getClientOriginalName();
-
-            $tujuan = public_path('storage/barang');
-
-            if (!file_exists($tujuan)) {
-                mkdir($tujuan, 0755, true);
-            }
-
-            $file->move($tujuan, $namaFile);
-
-            $barang->gambar = 'storage/barang/' . $namaFile;
+            $namaFile = time() . '_' . $file->getClientOriginalName(); 
+            $file->storeAs('barang', $namaFile, 'public');
+            $barang->gambar = $namaFile;
         }
 
         $barang->nama_barang = $request->nama_barang;
@@ -122,7 +106,7 @@ class ApiBarangController extends Controller
             'status' => true,
             'message' => 'Barang berhasil diupdate',
             'data' => $barang,
-            'gambar_url' => $barang->gambar ? asset($barang->gambar) : null
+            'gambar_url' => $barang->gambar ? asset('storage/barang/' . $barang->gambar) : null
         ]);
     }
 
@@ -130,8 +114,8 @@ class ApiBarangController extends Controller
     {
         $barang = barang::findOrFail($id);
 
-        if ($barang->gambar && file_exists(public_path($barang->gambar))) {
-            unlink(public_path($barang->gambar));
+        if ($barang->gambar && file_exists(storage_path('app/public/barang/' . $barang->gambar))) {
+            unlink(storage_path('app/public/barang/' . $barang->gambar));
         }
 
         $barang->delete();
@@ -143,13 +127,20 @@ class ApiBarangController extends Controller
     }
 
     public function kategori()
-    {
-        return response()->json([
-            'status' => true,
-            'message' => 'Data kategori berhasil diambil',
-            'data' => Kategori::all()
-        ]);
-    }
+{
+    $data = Kategori::all()->map(function ($item) {
+        $item->gambar_url = $item->gambar
+            ? asset('storage/' . $item->gambar)
+            : null;
+        return $item;
+    });
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Data kategori berhasil diambil',
+        'data' => $data
+    ]);
+}
 
     public function bahan()
     {
@@ -159,4 +150,16 @@ class ApiBarangController extends Controller
             'data' => Bahan::all()
         ]);
     }
+    public function show($id)
+{
+    $barang = barang::with(['kategori', 'bahan'])->findOrFail($id);
+    $barang->gambar_url = $barang->gambar
+        ? asset('storage/barang/' . $barang->gambar)
+        : null;
+
+    return response()->json([
+        'status' => true,
+        'data' => $barang
+    ]);
+}
 }
