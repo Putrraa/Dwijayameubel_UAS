@@ -17,7 +17,7 @@ use App\Http\Controllers\ContactController;
 
 
 // Ganti Route::post menjadi Route::put
-Route::put('/reset-password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('password.update');
+Route::put('/reset-password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->middleware('auth')->name('profile.password.update');
 Route::middleware('auth')->get('/redirect-role', function () {
     
     if(auth()->user()->role == 'admin'){

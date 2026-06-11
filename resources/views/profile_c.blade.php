@@ -526,7 +526,7 @@
                         Pastikan password baru aman.
                     </p>
 
-                    <form action="{{ route('password.update') }}"
+                    <form action="{{ route('profile.password.update') }}"
                           method="POST">
 
                         @csrf
