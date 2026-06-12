@@ -12,7 +12,7 @@
                     <a class="nav-link" href="{{ route('customer.index') }}">Beranda</a>
                 </li>
                 <li class="nav-item {{ Request::is('shop') ? 'active' : '' }}">
-                    <a class="nav-link" href="{{ route('customer.shop') }}">Shop</a>
+                    <a class="nav-link" href="{{ route('customer.shop') }}">Belanja</a>
                 </li>
                 <li class="nav-item {{ Request::is('custom') ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('customer.custom') }}">Custom</a>
