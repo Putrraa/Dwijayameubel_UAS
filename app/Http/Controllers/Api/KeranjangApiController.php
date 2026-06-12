@@ -32,9 +32,9 @@ class KeranjangApiController extends Controller
                     'detail_pesanan.barang_id',
                     'barang.nama_barang',
                     'barang.harga',
+                    'barang.gambar',
                     'detail_pesanan.jumlah',
-                    'detail_pesanan.jumlah_harga as subtotal',
-                    'barang.gambar'
+                    'detail_pesanan.jumlah_harga'
                 )
                 ->get()
                 ->map(function ($item) {
@@ -44,7 +44,9 @@ class KeranjangApiController extends Controller
                         'nama_barang' => $item->nama_barang,
                         'harga' => (string) $item->harga,
                         'jumlah' => (int) $item->jumlah,
-                        'subtotal' => (string) $item->subtotal,
+                        'subtotal' => (string) $item->jumlah_harga,
+
+                        // ini yang dipakai Glide di Android
                         'gambar_url' => $item->gambar
                             ? asset('storage/' . $item->gambar)
                             : null,
