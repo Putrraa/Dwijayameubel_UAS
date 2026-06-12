@@ -9,10 +9,10 @@
         <div class="collapse navbar-collapse" id="navbarsFurni">
             <ul class="custom-navbar-nav navbar-nav ms-auto mb-2 mb-md-0">
                 <li class="nav-item {{ Request::is('customer') ? 'active' : '' }}">
-                    <a class="nav-link" href="{{ route('customer.index') }}">Beranda</a>
+                    <a class="nav-link" href="{{ route('customer.index') }}">Home</a>
                 </li>
                 <li class="nav-item {{ Request::is('shop') ? 'active' : '' }}">
-                    <a class="nav-link" href="{{ route('customer.shop') }}">Belanja</a>
+                    <a class="nav-link" href="{{ route('customer.shop') }}">Shop</a>
                 </li>
                 <li class="nav-item {{ Request::is('custom') ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('customer.custom') }}">Custom</a>
