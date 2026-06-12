@@ -5,7 +5,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ApiBarangController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\ProfileApiController;
+use App\Http\Controllers\Api\CustomOrderApiController;
 
+Route::post('/custom-order/store', [CustomOrderApiController::class, 'store']);
 Route::get('/profile/{id}', [ProfileApiController::class, 'profile']);
 Route::get('/riwayat-pesanan/{userId}', [ProfileApiController::class, 'riwayatPesanan']);
 Route::get('/custom-order/{userId}', [ProfileApiController::class, 'customOrder']);
