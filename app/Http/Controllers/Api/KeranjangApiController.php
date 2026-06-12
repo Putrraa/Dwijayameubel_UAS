@@ -48,7 +48,7 @@ class KeranjangApiController extends Controller
 
                         // ini yang dipakai Glide di Android
                         'gambar_url' => $item->gambar
-                            ? asset('storage/' . $item->gambar)
+                            ? asset('storage/' . str_replace(' ', '%20', $item->gambar))
                             : null,
                     ];
                 });
