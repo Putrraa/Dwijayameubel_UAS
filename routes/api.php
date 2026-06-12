@@ -4,7 +4,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ApiBarangController;
 use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\Api\ProfileApiController;
 
+Route::get('/profile/{id}', [ProfileApiController::class, 'profile']);
+Route::get('/riwayat-pesanan/{userId}', [ProfileApiController::class, 'riwayatPesanan']);
+Route::get('/custom-order/{userId}', [ProfileApiController::class, 'customOrder']);
 Route::post('/login', [AuthApiController::class, 'login']);
 Route::post('/register', [AuthApiController::class, 'register']);
 
