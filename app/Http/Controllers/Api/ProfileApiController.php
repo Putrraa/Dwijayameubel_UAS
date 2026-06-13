@@ -48,19 +48,24 @@ class ProfileApiController extends Controller
 
     public function customOrder($userId)
     {
-        $data = CustomOrder::where('user_id', $userId)
+        $data = \App\Models\CustomOrder::where('user_id', $userId)
             ->latest()
             ->get()
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
-                    'furniture_nama' => $item->jenis_furniture ?? '-',
-                    'kayu' => $item->jenis_kayu ?? '-',
-                    'ukuran' => $item->ukuran ?? '-',
+                    'furniture_nama' => $item->jenis_furniture,
+                    'kayu' => $item->jenis_kayu,
+                    'ukuran' => $item->ukuran,
                     'harga' => $item->estimasi_harga
                         ? 'Rp ' . number_format($item->estimasi_harga, 0, ',', '.')
                         : '-',
                     'status' => $this->formatStatusCustom($item->status),
+
+                    // INI YANG PENTING
+                    'gambar_url' => $item->gambar
+                        ? asset('storage/' . str_replace(' ', '%20', $item->gambar))
+                        : null,
                 ];
             });
 
@@ -71,27 +76,14 @@ class ProfileApiController extends Controller
         ]);
     }
 
-    private function formatStatusPesanan($status)
-    {
-        return match ((string) $status) {
-            '0' => 'Keranjang',
-            '1' => 'Diproses',
-            '2' => 'Dikirim',
-            '3' => 'Selesai',
-            '4' => 'Dibatalkan',
-            default => ucfirst((string) $status),
-        };
-    }
-
     private function formatStatusCustom($status)
     {
-        return match ((string) $status) {
-            '0' => 'Pending',
-            '1' => 'Menunggu Estimasi',
-            '2' => 'Diproses',
-            '3' => 'Selesai',
-            '4' => 'Dibatalkan',
-            default => ucfirst((string) $status),
+        return match ((int) $status) {
+            1 => 'Pending',
+            2 => 'Diproses',
+            3 => 'Selesai',
+            4 => 'Ditolak',
+            default => 'Pending',
         };
     }
 }
