@@ -8,7 +8,12 @@ use App\Http\Controllers\Api\ProfileApiController;
 use App\Http\Controllers\Api\CustomOrderApiController;
 use App\Http\Controllers\Api\KeranjangApiController;
 use App\Http\Controllers\Api\LaporanApiController;
+use App\Http\Controllers\Api\PenggunaApiController;
 
+Route::get('/pengguna', [PenggunaApiController::class, 'index']);
+Route::post('/pengguna/store', [PenggunaApiController::class, 'store']);
+Route::post('/pengguna/update/{id}', [PenggunaApiController::class, 'update']);
+Route::post('/pengguna/delete/{id}', [PenggunaApiController::class, 'destroy']);
 Route::get('/laporan', [LaporanApiController::class, 'index']);
 Route::get('/keranjang/{userId}', [KeranjangApiController::class, 'index']);
 Route::post('/keranjang/update/{id}', [KeranjangApiController::class, 'updateJumlah']);
