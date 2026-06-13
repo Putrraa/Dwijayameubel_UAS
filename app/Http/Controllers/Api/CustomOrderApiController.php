@@ -32,7 +32,7 @@ class CustomOrderApiController extends Controller
             'ukuran' => $request->ukuran,
             'catatan' => $request->catatan,
             'gambar' => $gambarPath,
-            'status' => 1,
+            'status' => 'pending',
         ]);
 
         return response()->json([

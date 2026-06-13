@@ -9,7 +9,10 @@ use App\Http\Controllers\Api\CustomOrderApiController;
 use App\Http\Controllers\Api\KeranjangApiController;
 use App\Http\Controllers\Api\LaporanApiController;
 use App\Http\Controllers\Api\PenggunaApiController;
+use App\Http\Controllers\Api\KasirCustomOrderApiController;
 
+Route::get('/kasir/custom-order', [KasirCustomOrderApiController::class, 'index']);
+Route::post('/kasir/custom-order/update/{id}', [KasirCustomOrderApiController::class, 'update']);
 Route::get('/pengguna', [PenggunaApiController::class, 'index']);
 Route::post('/pengguna/store', [PenggunaApiController::class, 'store']);
 Route::post('/pengguna/update/{id}', [PenggunaApiController::class, 'update']);
