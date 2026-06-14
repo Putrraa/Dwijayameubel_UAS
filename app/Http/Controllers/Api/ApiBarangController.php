@@ -11,13 +11,41 @@ use App\Models\Bahan;
 class ApiBarangController extends Controller
 {
     public function index()
-    {
+{
+    try {
         $data = barang::with(['kategori', 'bahan'])
             ->latest()
             ->get()
             ->map(function ($item) {
-                $item->gambar_url = $item->gambar ? asset('storage/barang/' . $item->gambar) : null;
-                return $item;
+                return [
+                    'id' => $item->id,
+                    'nama_barang' => $item->nama_barang,
+                    'kategori_id' => $item->kategori_id,
+                    'bahan_id' => $item->bahan_id,
+                    'harga' => (string) $item->harga,
+                    'stok' => (int) $item->stok,
+                    'ukuran' => $item->ukuran,
+                    'deskripsi' => $item->deskripsi,
+                    'gambar' => $item->gambar,
+
+                    'gambar_url' => $item->gambar
+                        ? asset('storage/barang/' . str_replace(' ', '%20', $item->gambar))
+                        : null,
+
+                    'kategori' => $item->kategori ? [
+                        'id' => $item->kategori->id,
+                        'nama_kategori' => $item->kategori->nama_kategori,
+                        'gambar' => $item->kategori->gambar ?? null,
+                        'gambar_url' => isset($item->kategori->gambar) && $item->kategori->gambar
+                            ? asset('storage/' . str_replace(' ', '%20', $item->kategori->gambar))
+                            : null,
+                    ] : null,
+
+                    'bahan' => $item->bahan ? [
+                        'id' => $item->bahan->id,
+                        'nama_bahan' => $item->bahan->nama_bahan,
+                    ] : null,
+                ];
             });
 
         return response()->json([
@@ -25,8 +53,15 @@ class ApiBarangController extends Controller
             'message' => 'Data barang berhasil diambil',
             'data' => $data
         ]);
-    }
 
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Server error: ' . $e->getMessage(),
+            'data' => []
+        ], 500);
+    }
+}
     public function store(Request $request)
     {
         $request->validate([
@@ -128,20 +163,33 @@ class ApiBarangController extends Controller
     }
 
     public function kategori()
-{
-    $data = Kategori::all()->map(function ($item) {
-        $item->gambar_url = $item->gambar
-            ? asset('storage/' . $item->gambar)
-            : null;
-        return $item;
-    });
+    {
+        try {
+            $data = Kategori::all()->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'nama_kategori' => $item->nama_kategori,
+                    'gambar' => $item->gambar ?? null,
+                    'gambar_url' => $item->gambar
+                        ? asset('storage/' . str_replace(' ', '%20', $item->gambar))
+                        : null,
+                ];
+            });
 
-    return response()->json([
-        'status' => true,
-        'message' => 'Data kategori berhasil diambil',
-        'data' => $data
-    ]);
-}
+            return response()->json([
+                'status' => true,
+                'message' => 'Data kategori berhasil diambil',
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server error: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
 
     public function bahan()
     {
@@ -152,15 +200,60 @@ class ApiBarangController extends Controller
         ]);
     }
     public function show($id)
-{
-    $barang = barang::with(['kategori', 'bahan'])->findOrFail($id);
-    $barang->gambar_url = $barang->gambar
-        ? asset('storage/barang/' . $barang->gambar)
-        : null;
+    {
+        try {
+            $item = barang::with(['kategori', 'bahan'])->find($id);
 
-    return response()->json([
-        'status' => true,
-        'data' => $barang
-    ]);
-}
+            if (!$item) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Barang tidak ditemukan',
+                    'data' => null
+                ], 404);
+            }
+
+            $data = [
+                'id' => $item->id,
+                'nama_barang' => $item->nama_barang,
+                'kategori_id' => $item->kategori_id,
+                'bahan_id' => $item->bahan_id,
+                'harga' => (string) $item->harga,
+                'stok' => (int) $item->stok,
+                'ukuran' => $item->ukuran,
+                'deskripsi' => $item->deskripsi,
+                'gambar' => $item->gambar,
+
+                'gambar_url' => $item->gambar
+                    ? asset('storage/barang/' . str_replace(' ', '%20', $item->gambar))
+                    : null,
+
+                'kategori' => $item->kategori ? [
+                    'id' => $item->kategori->id,
+                    'nama_kategori' => $item->kategori->nama_kategori,
+                    'gambar' => $item->kategori->gambar ?? null,
+                    'gambar_url' => isset($item->kategori->gambar) && $item->kategori->gambar
+                        ? asset('storage/' . str_replace(' ', '%20', $item->kategori->gambar))
+                        : null,
+                ] : null,
+
+                'bahan' => $item->bahan ? [
+                    'id' => $item->bahan->id,
+                    'nama_bahan' => $item->bahan->nama_bahan,
+                ] : null,
+            ];
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Detail barang berhasil diambil',
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server error: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
 }
