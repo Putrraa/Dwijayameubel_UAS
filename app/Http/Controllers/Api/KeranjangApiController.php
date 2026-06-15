@@ -181,4 +181,126 @@ class KeranjangApiController extends Controller
             ], 500);
         }
     }
+
+    public function tambah(Request $request)
+    {
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'barang_id' => 'required|exists:barang,id',
+                'jumlah' => 'required|integer|min:1',
+            ]);
+
+            return DB::transaction(function () use ($request) {
+                $userId = $request->user_id;
+                $barangId = $request->barang_id;
+                $jumlah = (int) $request->jumlah;
+
+                $barang = DB::table('barang')
+                    ->where('id', $barangId)
+                    ->first();
+
+                if (!$barang) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Barang tidak ditemukan'
+                    ], 404);
+                }
+
+                if ($barang->stok <= 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Stok barang habis'
+                    ], 422);
+                }
+
+                if ($jumlah > $barang->stok) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Jumlah melebihi stok tersedia'
+                    ], 422);
+                }
+
+                $pesanan = DB::table('pesanan')
+                    ->where('user_id', $userId)
+                    ->where('status', 0)
+                    ->first();
+
+                if (!$pesanan) {
+                    $pesananId = DB::table('pesanan')->insertGetId([
+                        'user_id' => $userId,
+                        'tanggal' => now(),
+                        'status' => 0,
+                        'jumlah_harga' => 0,
+                        'kode' => 'ORD-' . time(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    $pesananId = $pesanan->id;
+                }
+
+                $detail = DB::table('detail_pesanan')
+                    ->where('pesanan_id', $pesananId)
+                    ->where('barang_id', $barangId)
+                    ->first();
+
+                if ($detail) {
+                    $jumlahBaru = $detail->jumlah + $jumlah;
+
+                    if ($jumlahBaru > $barang->stok) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Jumlah keranjang melebihi stok tersedia'
+                        ], 422);
+                    }
+
+                    DB::table('detail_pesanan')
+                        ->where('id', $detail->id)
+                        ->update([
+                            'jumlah' => $jumlahBaru,
+                            'jumlah_harga' => $barang->harga * $jumlahBaru,
+                            'updated_at' => now(),
+                        ]);
+                } else {
+                    DB::table('detail_pesanan')->insert([
+                        'pesanan_id' => $pesananId,
+                        'barang_id' => $barangId,
+                        'jumlah' => $jumlah,
+                        'jumlah_harga' => $barang->harga * $jumlah,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $total = DB::table('detail_pesanan')
+                    ->where('pesanan_id', $pesananId)
+                    ->sum('jumlah_harga');
+
+                DB::table('pesanan')
+                    ->where('id', $pesananId)
+                    ->update([
+                        'jumlah_harga' => $total,
+                        'updated_at' => now(),
+                    ]);
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Produk berhasil ditambahkan ke keranjang'
+                ]);
+            });
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => collect($e->errors())->flatten()->first()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -24,6 +24,7 @@ Route::post('/pengguna/update/{id}', [PenggunaApiController::class, 'update']);
 Route::post('/pengguna/delete/{id}', [PenggunaApiController::class, 'destroy']);
 Route::get('/laporan', [LaporanApiController::class, 'index']);
 Route::get('/keranjang/{userId}', [KeranjangApiController::class, 'index']);
+Route::post('/keranjang/tambah', [KeranjangApiController::class, 'tambah']);
 Route::post('/keranjang/update/{id}', [KeranjangApiController::class, 'updateJumlah']);
 Route::post('/keranjang/delete/{id}', [KeranjangApiController::class, 'hapus']);
 Route::post('/keranjang/bayar/{userId}', [KeranjangApiController::class, 'bayar']);
