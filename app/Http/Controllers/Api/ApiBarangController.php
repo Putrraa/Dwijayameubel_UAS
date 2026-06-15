@@ -256,4 +256,87 @@ class ApiBarangController extends Controller
             ], 500);
         }
     }
+
+    public function storeKategori(Request $request)
+    {
+        try {
+            $request->validate([
+                'nama_kategori' => 'required|string|max:255|unique:kategoris,nama_kategori',
+                'gambar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            ], [
+                'nama_kategori.required' => 'Nama kategori wajib diisi',
+                'nama_kategori.unique' => 'Kategori sudah ada',
+                'gambar.image' => 'File harus berupa gambar',
+                'gambar.mimes' => 'Format gambar harus jpg, jpeg, png, atau webp',
+                'gambar.max' => 'Ukuran gambar maksimal 2MB',
+            ]);
+
+            $gambarPath = null;
+
+            if ($request->hasFile('gambar')) {
+                $file = $request->file('gambar');
+                $namaFile = time() . '_' . $file->getClientOriginalName();
+
+                $file->storeAs('kategori', $namaFile, 'public');
+
+                // Disimpan dengan folder agar cocok dengan asset('storage/' . $item->gambar)
+                $gambarPath = 'kategori/' . $namaFile;
+            }
+
+            Kategori::create([
+                'nama_kategori' => $request->nama_kategori,
+                'gambar' => $gambarPath,
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Kategori berhasil ditambahkan'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => collect($e->errors())->flatten()->first()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function storeBahan(Request $request)
+    {
+        try {
+            $request->validate([
+                'nama_bahan' => 'required|string|max:255|unique:bahans,nama_bahan',
+            ], [
+                'nama_bahan.required' => 'Nama bahan wajib diisi',
+                'nama_bahan.unique' => 'Bahan sudah ada',
+            ]);
+
+            Bahan::create([
+                'nama_bahan' => $request->nama_bahan,
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Bahan berhasil ditambahkan'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => collect($e->errors())->flatten()->first()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
+}
 }

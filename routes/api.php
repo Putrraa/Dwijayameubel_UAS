@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\PenggunaApiController;
 use App\Http\Controllers\Api\KasirCustomOrderApiController;
 use App\Http\Controllers\Api\KasirPesananApiController;
 
+Route::post('/kategori/store', [ApiBarangController::class, 'storeKategori']);
+Route::post('/bahan/store', [ApiBarangController::class, 'storeBahan']);
 Route::get('/kasir/pesanan', [KasirPesananApiController::class, 'index']);
 Route::post('/kasir/pesanan/update-status/{id}', [KasirPesananApiController::class, 'updateStatus']);
 Route::get('/kasir/custom-order', [KasirCustomOrderApiController::class, 'index']);
