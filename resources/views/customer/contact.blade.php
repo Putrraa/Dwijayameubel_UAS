@@ -29,6 +29,9 @@
 
 @section('content')
 
+{{-- Leaflet CSS --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
 <div class="untree_co-section">
     <div class="container">
 
@@ -96,6 +99,23 @@
 
                     </div>
 
+                    {{-- ===== PETA LEAFLET ===== --}}
+                    <div id="map" style="width: 100%; height: 320px; border-radius: 12px; overflow: hidden; margin-bottom: 16px; z-index: 0;"></div>
+
+                    {{-- ===== TOMBOL BUKA DI GOOGLE MAPS ===== --}}
+                    <div class="mb-4">
+                        <a href="https://maps.app.goo.gl/4oz86WC9s4QgjCJy9?g_st=aw"
+                           target="_blank"
+                           class="btn btn-dark w-100 rounded-pill py-2"
+                           style="font-size: 15px; font-weight: 600;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-map-fill me-2" viewBox="0 0 16 16" style="vertical-align: -2px;">
+                                <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.598-.49L10.5 1.91 5.598.01a.5.5 0 0 0-.196 0l-5 1A.5.5 0 0 0 0 1.5v14a.5.5 0 0 0 .598.49l4.902-.98 4.902.98a.502.502 0 0 0 .196 0l5-1A.5.5 0 0 0 16 14.5V.5zM5 14.09V1.11l.5.1.5-.1V14.09l-.5-.09-.5.09zm5 .8V1.91l.5-.1.5.1v12.98l-.5.09-.5-.09z"/>
+                            </svg>
+                            Buka di Google Maps
+                        </a>
+                    </div>
+
+                    {{-- ===== TOMBOL WHATSAPP ===== --}}
                     @php
                         $waText = urlencode('Halo Dwijaya Meubel, saya ingin bertanya tentang produk meubel.');
                     @endphp
@@ -156,5 +176,19 @@
 
     </div>
 </div>
+
+{{-- Leaflet JS --}}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var map = L.map('map').setView([-7.745643610925027, 112.024023257671], 17);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    var marker = L.marker([-7.745643610925027, 112.024023257671]).addTo(map);
+    marker.bindPopup('<strong>Dwijaya Meubel</strong><br>Combong, Wanengpaten,<br>Kec. Gampengrejo, Kab. Kediri').openPopup();
+</script>
 
 @endsection
