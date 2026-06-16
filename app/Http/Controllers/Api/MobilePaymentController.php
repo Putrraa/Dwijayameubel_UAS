@@ -8,6 +8,7 @@
   use App\Models\barang;
   use Illuminate\Http\Request;
   use Illuminate\Support\Facades\DB;
+  use Illuminate\Support\Facades\Schema;
   use Midtrans\Config;
   use Midtrans\Snap;
   use Midtrans\Transaction;
@@ -149,11 +150,11 @@
               ]],
           ]);
 
-          $custom->update([
+          $custom->update($this->customPaymentUpdate([
               'snap_token' => $transaction->token,
               'midtrans_order_id' => $orderId,
               'payment_status' => 'pending',
-          ]);
+          ]));
 
           return response()->json([
               'status' => true,
@@ -168,6 +169,11 @@
       {
           if (str_starts_with($orderId, 'CUSTOM-')) {
               $custom = CustomOrder::where('midtrans_order_id', $orderId)->first();
+
+              if ($custom && $custom->payment_status !== 'paid') {
+                  $this->syncCustomPaymentFromMidtrans($custom);
+                  $custom->refresh();
+              }
 
               return response()->json([
                   'type' => 'custom',
@@ -226,6 +232,62 @@
                   'transaction_id' => $transactionId,
               ]);
           }
+      }
+
+      private function syncCustomPaymentFromMidtrans(CustomOrder $custom)
+      {
+          try {
+              $this->midtransConfig();
+              $midtransStatus = Transaction::status($custom->midtrans_order_id);
+          } catch (\Exception $e) {
+              return;
+          }
+
+          $transactionStatus = $midtransStatus->transaction_status ?? null;
+          $fraudStatus = $midtransStatus->fraud_status ?? null;
+          $transactionId = $midtransStatus->transaction_id ?? null;
+
+          if ($transactionStatus === 'capture') {
+              if ($fraudStatus === 'accept') {
+                  $this->setCustomPaid($custom, $transactionId);
+              }
+          } elseif ($transactionStatus === 'settlement') {
+              $this->setCustomPaid($custom, $transactionId);
+          } elseif ($transactionStatus === 'pending') {
+              $custom->update($this->customPaymentUpdate([
+                  'payment_status' => 'pending',
+                  'transaction_id' => $transactionId,
+              ]));
+          } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
+              $custom->update($this->customPaymentUpdate([
+                  'payment_status' => 'failed',
+                  'transaction_id' => $transactionId,
+              ]));
+          }
+      }
+
+      private function setCustomPaid(CustomOrder $custom, $transactionId = null)
+      {
+          $custom->refresh();
+
+          if ($custom->payment_status === 'paid') {
+              return;
+          }
+
+          $custom->update($this->customPaymentUpdate([
+              'payment_status' => 'paid',
+              'transaction_id' => $transactionId,
+              'status' => 'diproses',
+          ]));
+      }
+
+      private function customPaymentUpdate(array $data)
+      {
+          if (Schema::hasColumn('custom_orders', 'metode_pembayaran')) {
+              $data['metode_pembayaran'] = 'midtrans';
+          }
+
+          return $data;
       }
 
       private function setRegularPaid(Pesanan $pesanan, $paymentMethod = null, $transactionId = null)

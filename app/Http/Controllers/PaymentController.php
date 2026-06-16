@@ -10,6 +10,7 @@ use Midtrans\Notification;
 use App\Models\Pesanan;
 use App\Models\barang;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PaymentController extends Controller
 {
@@ -68,6 +69,11 @@ class PaymentController extends Controller
     {
         $custom = CustomOrder::findOrFail($id);
 
+        if ($custom->payment_status === 'paid') {
+            return redirect()->route('profile')
+                ->with('success', 'Pembayaran custom order sudah selesai.');
+        }
+
         // Cek apakah estimasi harga sudah ada
         if (!$custom->estimasi_harga || $custom->estimasi_harga <= 0) {
             return redirect()->route('profile')
@@ -77,7 +83,7 @@ class PaymentController extends Controller
         // Jika belum punya Snap Token, buat baru
         if (!$custom->snap_token) {
 
-            $midtransOrderId = 'CUSTOM-' . $custom->id . '-' . time();
+            $midtransOrderId = 'CUSTOM-' . $custom->id . '-' . now()->format('YmdHis') . '-' . random_int(1000, 9999);
 
             $params = [
                 'transaction_details' => [
@@ -102,10 +108,11 @@ class PaymentController extends Controller
 
             $snapToken = Snap::getSnapToken($params);
 
-            $custom->update([
+            $custom->update($this->customPaymentUpdate([
                 'snap_token'        => $snapToken,
                 'midtrans_order_id' => $midtransOrderId,
-            ]);
+                'payment_status'    => 'pending',
+            ]));
         } else {
 
             $snapToken = $custom->snap_token;
@@ -142,11 +149,14 @@ class PaymentController extends Controller
       if (str_starts_with($orderId, 'CUSTOM-')) {
           $custom = CustomOrder::where('midtrans_order_id', $orderId)->firstOrFail();
 
-          $custom->update([
-              'payment_status' => $paymentStatus,
-              'transaction_id' => $transactionId,
-              'status' => ($paymentStatus === 'paid') ? 'diproses' : $custom->status,
-          ]);
+          if ($paymentStatus === 'paid') {
+              $this->setCustomPaid($custom, $transactionId);
+          } else {
+              $custom->update($this->customPaymentUpdate([
+                  'payment_status' => $paymentStatus,
+                  'transaction_id' => $transactionId,
+              ]));
+          }
 
           return response()->json([
               'message' => 'Callback custom berhasil diproses'
@@ -177,6 +187,30 @@ class PaymentController extends Controller
           'message' => 'Order ID tidak dikenali'
       ], 404);
   }
+
+    private function setCustomPaid(CustomOrder $custom, $transactionId = null)
+    {
+        $custom->refresh();
+
+        if ($custom->payment_status === 'paid') {
+            return;
+        }
+
+        $custom->update($this->customPaymentUpdate([
+            'payment_status' => 'paid',
+            'transaction_id' => $transactionId,
+            'status' => 'diproses',
+        ]));
+    }
+
+    private function customPaymentUpdate(array $data)
+    {
+        if (Schema::hasColumn('custom_orders', 'metode_pembayaran')) {
+            $data['metode_pembayaran'] = 'midtrans';
+        }
+
+        return $data;
+    }
 
     private function setRegularPaid($pesanan, $paymentMethod = null, $transactionId = null)
     {
@@ -261,9 +295,7 @@ class PaymentController extends Controller
     {
         $custom = CustomOrder::findOrFail($id);
 
-        $custom->update([
-            'payment_status' => 'paid'
-        ]);
+        $this->setCustomPaid($custom);
 
         return redirect()->route('profile')
             ->with('success', 'Pembayaran berhasil.');

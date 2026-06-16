@@ -459,7 +459,7 @@
                                             </div>
 
                                             {{-- BUTTON BAYAR --}}
-                                            @if($custom->status != 'selesai')
+                                            @if($custom->payment_status != 'paid')
 
                                             <a href="{{ route('payment.show', $custom->id) }}"
                                             class="btn btn-dwj btn-sm">

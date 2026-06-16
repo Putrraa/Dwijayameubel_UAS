@@ -29,6 +29,8 @@ class CustomOrder extends Model
 
         'payment_status',
 
+        'metode_pembayaran',
+
         'transaction_id',
 
         'midtrans_order_id'
