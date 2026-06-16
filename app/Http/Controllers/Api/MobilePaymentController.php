@@ -114,8 +114,7 @@
 
       public function payCustom($id)
       {
-          $custom = CustomOrder::where('user_id', auth()->id())
-              ->findOrFail($id);
+          $custom = CustomOrder::findOrFail($id);
 
           if (!$custom->estimasi_harga || $custom->estimasi_harga <= 0) {
               return response()->json([
@@ -129,7 +128,7 @@
               ], 422);
           }
 
-          $orderId = 'CUSTOM-' . $custom->id . '-' . time();
+          $orderId = 'CUSTOM-' . $custom->id . '-' . now()->format('YmdHis') . '-' . random_int(1000, 9999);
 
           $this->midtransConfig();
 
@@ -157,6 +156,8 @@
           ]);
 
           return response()->json([
+              'status' => true,
+              'message' => 'Pembayaran custom berhasil dibuat',
               'order_id' => $orderId,
               'snap_token' => $transaction->token,
               'redirect_url' => $transaction->redirect_url,
