@@ -11,7 +11,11 @@ use App\Http\Controllers\Api\LaporanApiController;
 use App\Http\Controllers\Api\PenggunaApiController;
 use App\Http\Controllers\Api\KasirCustomOrderApiController;
 use App\Http\Controllers\Api\KasirPesananApiController;
+use App\Http\Controllers\Api\MobilePaymentController;
 
+Route::post('/checkout/bayar', [MobilePaymentController::class, 'payRegular']);
+Route::post('/custom-orders/{id}/bayar', [MobilePaymentController::class, 'payCustom']);
+Route::get('/payments/{orderId}/status', [MobilePaymentController::class, 'status']);
 Route::post('/kategori/store', [ApiBarangController::class, 'storeKategori']);
 Route::post('/bahan/store', [ApiBarangController::class, 'storeBahan']);
 Route::get('/kasir/pesanan', [KasirPesananApiController::class, 'index']);

@@ -7,6 +7,7 @@ use App\Models\CustomOrder;
 use Midtrans\Config;
 use Midtrans\Snap;
 use Midtrans\Notification;
+use App\Models\Pesanan;
 
 class PaymentController extends Controller
 {
@@ -113,37 +114,62 @@ class PaymentController extends Controller
     /**
      * Callback / Webhook dari Midtrans
      */
-    public function callback(Request $request)
-    {
-        $notif = new Notification();
+   public function callback(Request $request)
+  {
+      $notif = new Notification();
 
-        $orderId           = $notif->order_id;
-        $transactionStatus = $notif->transaction_status;
-        $fraudStatus       = $notif->fraud_status;
-        $transactionId     = $notif->transaction_id;
+      $orderId           = $notif->order_id;
+      $transactionStatus = $notif->transaction_status;
+      $fraudStatus       = $notif->fraud_status ?? null;
+      $transactionId     = $notif->transaction_id ?? null;
+      $paymentType       = $notif->payment_type ?? null;
 
-        $custom = CustomOrder::where('midtrans_order_id', $orderId)->firstOrFail();
+      if ($transactionStatus === 'capture') {
+          $paymentStatus = ($fraudStatus === 'accept') ? 'paid' : 'failed';
+      } elseif ($transactionStatus === 'settlement') {
+          $paymentStatus = 'paid';
+      } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
+          $paymentStatus = 'failed';
+      } elseif ($transactionStatus === 'pending') {
+          $paymentStatus = 'pending';
+      } else {
+          $paymentStatus = 'unknown';
+      }
 
-        if ($transactionStatus === 'capture') {
-            $paymentStatus = ($fraudStatus === 'accept') ? 'paid' : 'failed';
-        } elseif ($transactionStatus === 'settlement') {
-            $paymentStatus = 'paid';
-        } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
-            $paymentStatus = 'failed';
-        } elseif ($transactionStatus === 'pending') {
-            $paymentStatus = 'pending';
-        } else {
-            $paymentStatus = 'unknown';
-        }
+      if (str_starts_with($orderId, 'CUSTOM-')) {
+          $custom = CustomOrder::where('midtrans_order_id', $orderId)->firstOrFail();
 
-        $custom->update([
+          $custom->update([
+              'payment_status' => $paymentStatus,
+              'transaction_id' => $transactionId,
+              'status' => ($paymentStatus === 'paid') ? 'diproses' : $custom->status,
+          ]);
+
+          return response()->json([
+              'message' => 'Callback custom berhasil diproses'
+          ]);
+      }
+
+      if (str_starts_with($orderId, 'ORD-')) {
+        $pesanan = Pesanan::where('kode', $orderId)->firstOrFail();
+
+        $pesanan->update([
             'payment_status' => $paymentStatus,
+            'metode_pembayaran' => $paymentType,
             'transaction_id' => $transactionId,
-            'status'         => ($paymentStatus === 'paid') ? 'selesai' : $custom->status,
+            'paid_at' => $paymentStatus === 'paid' ? now() : $pesanan->paid_at,
+            'status' => $paymentStatus === 'paid' ? 1 : $pesanan->status,
         ]);
 
-        return response()->json(['message' => 'OK']);
+        return response()->json([
+            'message' => 'Callback pesanan berhasil diproses'
+        ]);
     }
+
+      return response()->json([
+          'message' => 'Order ID tidak dikenali'
+      ], 404);
+  }
 
     /**
      * Redirect sukses dari Midtrans
