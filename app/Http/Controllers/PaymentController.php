@@ -8,6 +8,8 @@ use Midtrans\Config;
 use Midtrans\Snap;
 use Midtrans\Notification;
 use App\Models\Pesanan;
+use App\Models\barang;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
@@ -151,15 +153,19 @@ class PaymentController extends Controller
       }
 
       if (str_starts_with($orderId, 'ORD-')) {
-        $pesanan = Pesanan::where('kode', $orderId)->firstOrFail();
+        $pesanan = Pesanan::with('detail.barang')
+            ->where('kode', $orderId)
+            ->firstOrFail();
 
-        $pesanan->update([
-            'payment_status' => $paymentStatus,
-            'metode_pembayaran' => $paymentType,
-            'transaction_id' => $transactionId,
-            'paid_at' => $paymentStatus === 'paid' ? now() : $pesanan->paid_at,
-            'status' => $paymentStatus === 'paid' ? 1 : $pesanan->status,
-        ]);
+        if ($paymentStatus === 'paid') {
+            $this->setRegularPaid($pesanan, $paymentType, $transactionId);
+        } else {
+            $pesanan->update([
+                'payment_status' => $paymentStatus,
+                'metode_pembayaran' => $paymentType,
+                'transaction_id' => $transactionId,
+            ]);
+        }
 
         return response()->json([
             'message' => 'Callback pesanan berhasil diproses'
@@ -170,6 +176,44 @@ class PaymentController extends Controller
           'message' => 'Order ID tidak dikenali'
       ], 404);
   }
+
+    private function setRegularPaid($pesanan, $paymentType = null, $transactionId = null)
+    {
+        $pesanan->refresh();
+
+        if ($pesanan->payment_status === 'paid') {
+            return;
+        }
+
+        DB::transaction(function () use ($pesanan, $paymentType, $transactionId) {
+            $pesanan = Pesanan::with('detail')
+                ->lockForUpdate()
+                ->findOrFail($pesanan->id);
+
+            if ($pesanan->payment_status === 'paid') {
+                return;
+            }
+
+            foreach ($pesanan->detail as $item) {
+                $barang = barang::lockForUpdate()->findOrFail($item->barang_id);
+
+                if ($barang->stok < $item->jumlah) {
+                    throw new \Exception('Stok ' . $barang->nama_barang . ' tidak mencukupi.');
+                }
+
+                $barang->stok -= $item->jumlah;
+                $barang->save();
+            }
+
+            $pesanan->update([
+                'status' => 1,
+                'payment_status' => 'paid',
+                'metode_pembayaran' => $paymentType,
+                'transaction_id' => $transactionId,
+                'paid_at' => now(),
+            ]);
+        });
+    }
 
     /**
      * Redirect sukses dari Midtrans

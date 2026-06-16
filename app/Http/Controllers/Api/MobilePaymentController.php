@@ -58,6 +58,7 @@
           $pesanan->update([
                 'kode' => $orderId,
                 'jumlah_harga' => $total,
+                'status' => 1,
                 'nama_penerima' => $request->nama_penerima,
                 'no_telepon' => $request->no_telepon,
                 'alamat' => $request->alamat,

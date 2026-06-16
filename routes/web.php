@@ -94,19 +94,12 @@ Route::middleware(['auth', 'customer'])->group(function () {
             ->name('payment.failed');
     });
 
-    // Midtrans webhook — tanpa CSRF
-    Route::post('/midtrans/callback', [PaymentController::class, 'callback'])
-        ->name('midtrans.callback');
-        
-
-
-
     // Route::post('/pesan/{id}', [pesanancontroller::class,'pesan'])->name('pesan')->middleware('auth');
     // Route::get('/keranjang', [pesanancontroller::class,'checkout'])->name('customer.keranjang');
     // Route::delete('/keranjang/{id}', [pesanancontroller::class,'hapus'])->name('keranjang.hapus');
     // Route::get('/barang/{id}', [barangcontroller::class, 'detail'])->name('barang.detail');
 });
-Route::post('/midtrans/callback', [pesanancontroller::class, 'midtransCallback'])
+Route::post('/midtrans/callback', [PaymentController::class, 'callback'])
     ->name('midtrans.callback');
 
 Route::middleware(['auth', 'admin'])->group(function () {
