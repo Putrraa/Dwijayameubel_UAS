@@ -117,8 +117,8 @@ class ProfileController extends Controller
 
         $metodePembayaran = $pesanan->metode_pembayaran;
 
-        if (!$metodePembayaran && $pesanan->payment_status === 'paid') {
-            $metodePembayaran = 'midtrans';
+        if ($pesanan->payment_status === 'paid' && (!$metodePembayaran || $metodePembayaran === 'midtrans')) {
+            $metodePembayaran = $this->syncMetodePembayaranFromMidtrans($pesanan) ?: $metodePembayaran ?: 'midtrans';
         }
 
         return response()->json([
@@ -132,7 +132,7 @@ class ProfileController extends Controller
                 'kode_pos' => $pesanan->kode_pos,
                 'payment_status' => $pesanan->payment_status,
                 'metode_pembayaran' => $metodePembayaran
-                    ? strtoupper(str_replace('_', ' ', $metodePembayaran))
+                    ? $this->formatMetodeBayar($metodePembayaran)
                     : 'BELUM ADA',
                 'catatan' => $pesanan->catatan,
             ],
@@ -145,5 +145,70 @@ class ProfileController extends Controller
             'error' => $e->getMessage()
         ], 500);
     }
+}
+
+private function syncMetodePembayaranFromMidtrans($pesanan)
+{
+    try {
+        \Midtrans\Config::$serverKey    = config('midtrans.server_key');
+        \Midtrans\Config::$isProduction = config('midtrans.is_production');
+        \Midtrans\Config::$isSanitized  = config('midtrans.is_sanitized');
+        \Midtrans\Config::$is3ds        = config('midtrans.is_3ds');
+
+        $status = \Midtrans\Transaction::status($pesanan->kode);
+        $metode = $this->resolveMidtransPaymentMethod($status, $status->payment_type ?? null);
+
+        if ($metode && $metode !== 'midtrans') {
+            \DB::table('pesanan')
+                ->where('id', $pesanan->id)
+                ->update([
+                    'metode_pembayaran' => $metode,
+                    'transaction_id' => $status->transaction_id ?? $pesanan->transaction_id,
+                    'updated_at' => now(),
+                ]);
+
+            return $metode;
+        }
+    } catch (\Exception $e) {
+        return null;
+    }
+
+    return null;
+}
+
+private function resolveMidtransPaymentMethod($source, $fallback = null)
+{
+    $paymentType = $source->payment_type ?? $fallback;
+
+    if ($paymentType === 'bank_transfer') {
+        $bank = null;
+
+        if (!empty($source->va_numbers) && isset($source->va_numbers[0]->bank)) {
+            $bank = $source->va_numbers[0]->bank;
+        } elseif (!empty($source->permata_va_number)) {
+            $bank = 'permata';
+        }
+
+        if ($bank) {
+            return strtolower($bank) . '_va';
+        }
+    }
+
+    return $paymentType ?: 'midtrans';
+}
+
+private function formatMetodeBayar($metode)
+{
+    return match ($metode) {
+        'qris' => 'QRIS',
+        'gopay' => 'GoPay',
+        'bank_transfer' => 'Bank Transfer',
+        'bca_va' => 'BCA Virtual Account',
+        'bni_va' => 'BNI Virtual Account',
+        'bri_va' => 'BRI Virtual Account',
+        'permata_va' => 'Permata Virtual Account',
+        'midtrans' => 'Midtrans',
+        default => strtoupper(str_replace('_', ' ', $metode)),
+    };
 }
 }

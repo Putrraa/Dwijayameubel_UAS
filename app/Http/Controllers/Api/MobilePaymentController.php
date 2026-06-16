@@ -178,7 +178,7 @@
 
           $pesanan = Pesanan::where('kode', $orderId)->first();
 
-          if ($pesanan && $pesanan->payment_status !== 'paid') {
+          if ($pesanan && ($pesanan->payment_status !== 'paid' || $this->needsPaymentMethodSync($pesanan))) {
               $this->syncRegularPaymentFromMidtrans($pesanan);
               $pesanan->refresh();
           }
@@ -203,38 +203,46 @@
           $transactionStatus = $midtransStatus->transaction_status ?? null;
           $fraudStatus = $midtransStatus->fraud_status ?? null;
           $paymentType = $midtransStatus->payment_type ?? null;
+          $paymentMethod = $this->resolveMidtransPaymentMethod($midtransStatus, $paymentType);
           $transactionId = $midtransStatus->transaction_id ?? null;
 
           if ($transactionStatus === 'capture') {
               if ($fraudStatus === 'accept') {
-                  $this->setRegularPaid($pesanan, $paymentType, $transactionId);
+                  $this->setRegularPaid($pesanan, $paymentMethod, $transactionId);
               }
           } elseif ($transactionStatus === 'settlement') {
-              $this->setRegularPaid($pesanan, $paymentType, $transactionId);
+              $this->setRegularPaid($pesanan, $paymentMethod, $transactionId);
           } elseif ($transactionStatus === 'pending') {
               $pesanan->update([
                   'payment_status' => 'pending',
-                  'metode_pembayaran' => $paymentType ?: $pesanan->metode_pembayaran ?: 'midtrans',
+                  'metode_pembayaran' => $paymentMethod ?: $pesanan->metode_pembayaran ?: 'midtrans',
                   'transaction_id' => $transactionId,
               ]);
           } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
               $pesanan->update([
                   'payment_status' => 'failed',
-                  'metode_pembayaran' => $paymentType ?: $pesanan->metode_pembayaran ?: 'midtrans',
+                  'metode_pembayaran' => $paymentMethod ?: $pesanan->metode_pembayaran ?: 'midtrans',
                   'transaction_id' => $transactionId,
               ]);
           }
       }
 
-      private function setRegularPaid(Pesanan $pesanan, $paymentType = null, $transactionId = null)
+      private function setRegularPaid(Pesanan $pesanan, $paymentMethod = null, $transactionId = null)
       {
           $pesanan->refresh();
 
           if ($pesanan->payment_status === 'paid') {
+              if ($this->needsPaymentMethodSync($pesanan) && $paymentMethod && $paymentMethod !== 'midtrans') {
+                  $pesanan->update([
+                      'metode_pembayaran' => $paymentMethod,
+                      'transaction_id' => $transactionId ?: $pesanan->transaction_id,
+                  ]);
+              }
+
               return;
           }
 
-          DB::transaction(function () use ($pesanan, $paymentType, $transactionId) {
+          DB::transaction(function () use ($pesanan, $paymentMethod, $transactionId) {
               $pesanan = Pesanan::with('detail')
                   ->lockForUpdate()
                   ->findOrFail($pesanan->id);
@@ -257,10 +265,36 @@
               $pesanan->update([
                   'status' => 1,
                   'payment_status' => 'paid',
-                  'metode_pembayaran' => 'midtrans',
+                  'metode_pembayaran' => $paymentMethod ?: $pesanan->metode_pembayaran ?: 'midtrans',
                   'transaction_id' => $transactionId,
                   'paid_at' => now(),
               ]);
           });
+      }
+
+      private function resolveMidtransPaymentMethod($source, $fallback = null)
+      {
+          $paymentType = $source->payment_type ?? $fallback;
+
+          if ($paymentType === 'bank_transfer') {
+              $bank = null;
+
+              if (!empty($source->va_numbers) && isset($source->va_numbers[0]->bank)) {
+                  $bank = $source->va_numbers[0]->bank;
+              } elseif (!empty($source->permata_va_number)) {
+                  $bank = 'permata';
+              }
+
+              if ($bank) {
+                  return strtolower($bank) . '_va';
+              }
+          }
+
+          return $paymentType ?: 'midtrans';
+      }
+
+      private function needsPaymentMethodSync(Pesanan $pesanan)
+      {
+          return !$pesanan->metode_pembayaran || $pesanan->metode_pembayaran === 'midtrans';
       }
   }

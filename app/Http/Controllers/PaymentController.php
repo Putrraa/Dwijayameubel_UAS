@@ -125,6 +125,7 @@ class PaymentController extends Controller
       $fraudStatus       = $notif->fraud_status ?? null;
       $transactionId     = $notif->transaction_id ?? null;
       $paymentType       = $notif->payment_type ?? null;
+      $paymentMethod     = $this->resolveMidtransPaymentMethod($notif, $paymentType);
 
       if ($transactionStatus === 'capture') {
           $paymentStatus = ($fraudStatus === 'accept') ? 'paid' : 'failed';
@@ -158,11 +159,11 @@ class PaymentController extends Controller
             ->firstOrFail();
 
         if ($paymentStatus === 'paid') {
-            $this->setRegularPaid($pesanan, $paymentType, $transactionId);
+            $this->setRegularPaid($pesanan, $paymentMethod, $transactionId);
         } else {
             $pesanan->update([
                 'payment_status' => $paymentStatus,
-                'metode_pembayaran' => $paymentType ?: $pesanan->metode_pembayaran ?: 'midtrans',
+                'metode_pembayaran' => $paymentMethod ?: $pesanan->metode_pembayaran ?: 'midtrans',
                 'transaction_id' => $transactionId,
             ]);
         }
@@ -177,15 +178,22 @@ class PaymentController extends Controller
       ], 404);
   }
 
-    private function setRegularPaid($pesanan, $paymentType = null, $transactionId = null)
+    private function setRegularPaid($pesanan, $paymentMethod = null, $transactionId = null)
     {
         $pesanan->refresh();
 
         if ($pesanan->payment_status === 'paid') {
+            if ($this->needsPaymentMethodSync($pesanan) && $paymentMethod && $paymentMethod !== 'midtrans') {
+                $pesanan->update([
+                    'metode_pembayaran' => $paymentMethod,
+                    'transaction_id' => $transactionId ?: $pesanan->transaction_id,
+                ]);
+            }
+
             return;
         }
 
-        DB::transaction(function () use ($pesanan, $paymentType, $transactionId) {
+        DB::transaction(function () use ($pesanan, $paymentMethod, $transactionId) {
             $pesanan = Pesanan::with('detail')
                 ->lockForUpdate()
                 ->findOrFail($pesanan->id);
@@ -208,11 +216,37 @@ class PaymentController extends Controller
             $pesanan->update([
                 'status' => 1,
                 'payment_status' => 'paid',
-                'metode_pembayaran' => 'midtrans',
+                'metode_pembayaran' => $paymentMethod ?: $pesanan->metode_pembayaran ?: 'midtrans',
                 'transaction_id' => $transactionId,
                 'paid_at' => now(),
             ]);
         });
+    }
+
+    private function resolveMidtransPaymentMethod($source, $fallback = null)
+    {
+        $paymentType = $source->payment_type ?? $fallback;
+
+        if ($paymentType === 'bank_transfer') {
+            $bank = null;
+
+            if (!empty($source->va_numbers) && isset($source->va_numbers[0]->bank)) {
+                $bank = $source->va_numbers[0]->bank;
+            } elseif (!empty($source->permata_va_number)) {
+                $bank = 'permata';
+            }
+
+            if ($bank) {
+                return strtolower($bank) . '_va';
+            }
+        }
+
+        return $paymentType ?: 'midtrans';
+    }
+
+    private function needsPaymentMethodSync($pesanan)
+    {
+        return !$pesanan->metode_pembayaran || $pesanan->metode_pembayaran === 'midtrans';
     }
 
     /**
