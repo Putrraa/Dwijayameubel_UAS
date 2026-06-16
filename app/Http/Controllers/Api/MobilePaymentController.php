@@ -10,6 +10,7 @@
   use Illuminate\Support\Facades\DB;
   use Midtrans\Config;
   use Midtrans\Snap;
+  use Midtrans\Transaction;
 
   class MobilePaymentController extends Controller
   {
@@ -177,11 +178,89 @@
 
           $pesanan = Pesanan::where('kode', $orderId)->first();
 
+          if ($pesanan && $pesanan->payment_status !== 'paid') {
+              $this->syncRegularPaymentFromMidtrans($pesanan);
+              $pesanan->refresh();
+          }
+
           return response()->json([
               'type' => 'regular',
               'order_id' => $orderId,
               'payment_status' => $pesanan?->payment_status,
               'status' => $pesanan?->status,
           ]);
+      }
+
+      private function syncRegularPaymentFromMidtrans(Pesanan $pesanan)
+      {
+          try {
+              $this->midtransConfig();
+              $midtransStatus = Transaction::status($pesanan->kode);
+          } catch (\Exception $e) {
+              return;
+          }
+
+          $transactionStatus = $midtransStatus->transaction_status ?? null;
+          $fraudStatus = $midtransStatus->fraud_status ?? null;
+          $paymentType = $midtransStatus->payment_type ?? null;
+          $transactionId = $midtransStatus->transaction_id ?? null;
+
+          if ($transactionStatus === 'capture') {
+              if ($fraudStatus === 'accept') {
+                  $this->setRegularPaid($pesanan, $paymentType, $transactionId);
+              }
+          } elseif ($transactionStatus === 'settlement') {
+              $this->setRegularPaid($pesanan, $paymentType, $transactionId);
+          } elseif ($transactionStatus === 'pending') {
+              $pesanan->update([
+                  'payment_status' => 'pending',
+                  'metode_pembayaran' => $paymentType ?: $pesanan->metode_pembayaran ?: 'midtrans',
+                  'transaction_id' => $transactionId,
+              ]);
+          } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
+              $pesanan->update([
+                  'payment_status' => 'failed',
+                  'metode_pembayaran' => $paymentType ?: $pesanan->metode_pembayaran ?: 'midtrans',
+                  'transaction_id' => $transactionId,
+              ]);
+          }
+      }
+
+      private function setRegularPaid(Pesanan $pesanan, $paymentType = null, $transactionId = null)
+      {
+          $pesanan->refresh();
+
+          if ($pesanan->payment_status === 'paid') {
+              return;
+          }
+
+          DB::transaction(function () use ($pesanan, $paymentType, $transactionId) {
+              $pesanan = Pesanan::with('detail')
+                  ->lockForUpdate()
+                  ->findOrFail($pesanan->id);
+
+              if ($pesanan->payment_status === 'paid') {
+                  return;
+              }
+
+              foreach ($pesanan->detail as $item) {
+                  $barang = barang::lockForUpdate()->findOrFail($item->barang_id);
+
+                  if ($barang->stok < $item->jumlah) {
+                      throw new \Exception('Stok ' . $barang->nama_barang . ' tidak mencukupi.');
+                  }
+
+                  $barang->stok -= $item->jumlah;
+                  $barang->save();
+              }
+
+              $pesanan->update([
+                  'status' => 1,
+                  'payment_status' => 'paid',
+                  'metode_pembayaran' => 'midtrans',
+                  'transaction_id' => $transactionId,
+                  'paid_at' => now(),
+              ]);
+          });
       }
   }

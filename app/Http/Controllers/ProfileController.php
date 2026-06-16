@@ -115,6 +115,12 @@ class ProfileController extends Controller
             )
             ->get();
 
+        $metodePembayaran = $pesanan->metode_pembayaran;
+
+        if (!$metodePembayaran && $pesanan->payment_status === 'paid') {
+            $metodePembayaran = 'midtrans';
+        }
+
         return response()->json([
             'pesanan' => [
                 'kode' => $pesanan->kode,
@@ -124,8 +130,9 @@ class ProfileController extends Controller
                 'alamat' => $pesanan->alamat,
                 'kota' => $pesanan->kota,
                 'kode_pos' => $pesanan->kode_pos,
-                'metode_pembayaran' => $pesanan->metode_pembayaran
-                    ? strtoupper(str_replace('_', ' ', $pesanan->metode_pembayaran))
+                'payment_status' => $pesanan->payment_status,
+                'metode_pembayaran' => $metodePembayaran
+                    ? strtoupper(str_replace('_', ' ', $metodePembayaran))
                     : 'BELUM ADA',
                 'catatan' => $pesanan->catatan,
             ],
