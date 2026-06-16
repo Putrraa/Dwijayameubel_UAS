@@ -238,11 +238,25 @@ public function bayar(Request $request)
 
     $total = $pesanan->detail->sum('jumlah_harga');
 
-    $kodeMidtrans = $pesanan->kode;
+    if ($pesanan->snap_token && $pesanan->payment_status === 'pending') {
+        $pesanan->update([
+            'jumlah_harga'      => $total,
+            'status'            => 1,
+            'nama_penerima'     => $request->nama_penerima,
+            'no_telepon'        => $request->no_telepon,
+            'alamat'            => $request->alamat,
+            'kota'              => $request->kota,
+            'kode_pos'          => $request->kode_pos,
+            'catatan'           => $request->catatan,
+        ]);
 
-    if (!$kodeMidtrans) {
-        $kodeMidtrans = 'ORD-' . $pesanan->id . '-' . time();
+        return response()->json([
+            'snap_token' => $pesanan->snap_token,
+            'kode'       => $pesanan->kode,
+        ]);
     }
+
+    $kodeMidtrans = 'ORD-' . $pesanan->id . '-' . now()->format('YmdHis') . '-' . random_int(1000, 9999);
 
     $pesanan->update([
         'kode'              => $kodeMidtrans,

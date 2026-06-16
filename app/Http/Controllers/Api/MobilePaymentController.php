@@ -53,7 +53,7 @@
           }
 
           $total = $pesanan->detail->sum('jumlah_harga');
-          $orderId = 'ORD-' . $pesanan->id . '-' . time();
+          $orderId = 'ORD-' . $pesanan->id . '-' . now()->format('YmdHis') . '-' . random_int(1000, 9999);
 
           $pesanan->update([
                 'kode' => $orderId,

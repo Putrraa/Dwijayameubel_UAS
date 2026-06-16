@@ -162,7 +162,7 @@ class PaymentController extends Controller
         } else {
             $pesanan->update([
                 'payment_status' => $paymentStatus,
-                'metode_pembayaran' => $paymentType,
+                'metode_pembayaran' => $paymentType ?: $pesanan->metode_pembayaran ?: 'midtrans',
                 'transaction_id' => $transactionId,
             ]);
         }
@@ -208,7 +208,7 @@ class PaymentController extends Controller
             $pesanan->update([
                 'status' => 1,
                 'payment_status' => 'paid',
-                'metode_pembayaran' => $paymentType,
+                'metode_pembayaran' => $paymentType ?: $pesanan->metode_pembayaran ?: 'midtrans',
                 'transaction_id' => $transactionId,
                 'paid_at' => now(),
             ]);
