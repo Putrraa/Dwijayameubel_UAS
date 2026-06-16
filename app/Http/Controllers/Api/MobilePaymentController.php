@@ -114,7 +114,7 @@
 
       public function payCustom($id)
       {
-          $custom = CustomOrder::findOrFail($id);
+          $custom = CustomOrder::with('user')->findOrFail($id);
 
           if (!$custom->estimasi_harga || $custom->estimasi_harga <= 0) {
               return response()->json([
@@ -138,8 +138,8 @@
                   'gross_amount' => (int) $custom->estimasi_harga,
               ],
               'customer_details' => [
-                  'first_name' => auth()->user()->name,
-                  'email' => auth()->user()->email,
+                  'first_name' => $custom->user->name ?? 'Customer',
+                  'email' => $custom->user->email ?? 'customer@example.com',
               ],
               'item_details' => [[
                   'id' => 'CUSTOM-' . $custom->id,
