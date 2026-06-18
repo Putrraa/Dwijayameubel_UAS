@@ -85,16 +85,33 @@ class PaymentController extends Controller
 
             $midtransOrderId = 'CUSTOM-' . $custom->id . '-' . now()->format('YmdHis') . '-' . random_int(1000, 9999);
 
+            $customerDetails = [
+                'first_name' => $custom->nama_penerima ?: auth()->user()->name,
+                'email' => auth()->user()->email,
+            ];
+
+            if ($custom->no_telepon) {
+                $customerDetails['phone'] = $custom->no_telepon;
+            }
+
+            if ($custom->nama_penerima && $custom->alamat && $custom->kota && $custom->kode_pos) {
+                $customerDetails['shipping_address'] = [
+                    'first_name' => $custom->nama_penerima,
+                    'phone' => $custom->no_telepon,
+                    'address' => $custom->alamat,
+                    'city' => $custom->kota,
+                    'postal_code' => $custom->kode_pos,
+                    'country_code' => 'IDN',
+                ];
+            }
+
             $params = [
                 'transaction_details' => [
                     'order_id' => $midtransOrderId,
                     'gross_amount' => (int) $custom->estimasi_harga,
                 ],
 
-                'customer_details' => [
-                    'first_name' => auth()->user()->name,
-                    'email' => auth()->user()->email,
-                ],
+                'customer_details' => $customerDetails,
 
                 'item_details' => [
                     [

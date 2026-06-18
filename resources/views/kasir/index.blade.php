@@ -51,6 +51,7 @@
                             <th>Kayu</th>
                             <th>Ukuran</th>
                             <th>Catatan</th>
+                            <th>Pengiriman</th>
                             <th>Gambar</th>
                             <th>Harga</th>
                             <th>Status</th>
@@ -87,6 +88,21 @@
 
                             <td style="max-width: 200px">
                                 {{ $item->catatan }}
+                            </td>
+
+                            <td style="min-width: 220px">
+                                <div class="fw-semibold">
+                                    {{ $item->nama_penerima ?? '-' }}
+                                </div>
+                                <div class="text-muted small">
+                                    {{ $item->no_telepon ?? '-' }}
+                                </div>
+                                <div class="small">
+                                    {{ $item->alamat ?? '-' }}
+                                </div>
+                                <div class="text-muted small">
+                                    Kota: {{ $item->kota ?? '-' }} ({{ $item->kode_pos ?? '-' }})
+                                </div>
                             </td>
 
                             {{-- GAMBAR --}}
@@ -177,7 +193,7 @@
 
                         <tr>
 
-                            <td colspan="9" class="text-center text-muted py-4">
+                            <td colspan="10" class="text-center text-muted py-4">
 
                                 Belum ada custom order
 

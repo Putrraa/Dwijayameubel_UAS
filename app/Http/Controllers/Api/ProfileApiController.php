@@ -64,6 +64,11 @@ class ProfileApiController extends Controller
                     'furniture_nama' => $item->jenis_furniture,
                     'kayu' => $item->jenis_kayu,
                     'ukuran' => $item->ukuran,
+                    'nama_penerima' => $item->nama_penerima,
+                    'no_telepon' => $item->no_telepon,
+                    'alamat' => $item->alamat,
+                    'kota' => $item->kota,
+                    'kode_pos' => $item->kode_pos,
                     'harga' => $item->estimasi_harga
                         ? 'Rp ' . number_format($item->estimasi_harga, 0, ',', '.')
                         : '-',

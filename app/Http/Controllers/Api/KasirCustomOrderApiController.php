@@ -25,6 +25,11 @@ class KasirCustomOrderApiController extends Controller
                         'jenis_kayu' => $item->jenis_kayu,
                         'ukuran' => $item->ukuran,
                         'catatan' => $item->catatan,
+                        'nama_penerima' => $item->nama_penerima,
+                        'no_telepon' => $item->no_telepon,
+                        'alamat' => $item->alamat,
+                        'kota' => $item->kota,
+                        'kode_pos' => $item->kode_pos,
 
                         'gambar_url' => $item->gambar
                             ? asset('storage/' . str_replace(' ', '%20', $item->gambar))

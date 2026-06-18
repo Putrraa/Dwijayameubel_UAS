@@ -23,6 +23,11 @@ class CustomOrderController extends Controller
         'jenis_kayu' => 'required',
         'ukuran' => 'required',
         'catatan' => 'nullable',
+        'nama_penerima' => 'required|string|max:255',
+        'no_telepon' => 'required|string|max:255',
+        'alamat' => 'required|string',
+        'kota' => 'required|string|max:255',
+        'kode_pos' => 'required|string|max:20',
         'gambar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
     ]);
 
@@ -50,6 +55,11 @@ class CustomOrderController extends Controller
         'gambar' => $gambarPath,
         'ukuran' => $request->ukuran,
         'catatan' => $request->catatan,
+        'nama_penerima' => $request->nama_penerima,
+        'no_telepon' => $request->no_telepon,
+        'alamat' => $request->alamat,
+        'kota' => $request->kota,
+        'kode_pos' => $request->kode_pos,
         'estimasi_harga' => null,
         'status' => 'pending',
     ]);

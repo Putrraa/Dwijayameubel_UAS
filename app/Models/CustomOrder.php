@@ -20,6 +20,16 @@ class CustomOrder extends Model
 
         'catatan',
 
+        'nama_penerima',
+
+        'no_telepon',
+
+        'alamat',
+
+        'kota',
+
+        'kode_pos',
+
         'estimasi_harga',
 
         'status',

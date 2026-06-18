@@ -133,15 +133,32 @@
 
           $this->midtransConfig();
 
+          $customerDetails = [
+              'first_name' => $custom->nama_penerima ?: ($custom->user->name ?? 'Customer'),
+              'email' => $custom->user->email ?? 'customer@example.com',
+          ];
+
+          if ($custom->no_telepon) {
+              $customerDetails['phone'] = $custom->no_telepon;
+          }
+
+          if ($custom->nama_penerima && $custom->alamat && $custom->kota && $custom->kode_pos) {
+              $customerDetails['shipping_address'] = [
+                  'first_name' => $custom->nama_penerima,
+                  'phone' => $custom->no_telepon,
+                  'address' => $custom->alamat,
+                  'city' => $custom->kota,
+                  'postal_code' => $custom->kode_pos,
+                  'country_code' => 'IDN',
+              ];
+          }
+
           $transaction = Snap::createTransaction([
               'transaction_details' => [
                   'order_id' => $orderId,
                   'gross_amount' => (int) $custom->estimasi_harga,
               ],
-              'customer_details' => [
-                  'first_name' => $custom->user->name ?? 'Customer',
-                  'email' => $custom->user->email ?? 'customer@example.com',
-              ],
+              'customer_details' => $customerDetails,
               'item_details' => [[
                   'id' => 'CUSTOM-' . $custom->id,
                   'price' => (int) $custom->estimasi_harga,
