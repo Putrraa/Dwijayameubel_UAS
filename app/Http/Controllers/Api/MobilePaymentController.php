@@ -159,6 +159,11 @@
                   'gross_amount' => (int) $custom->estimasi_harga,
               ],
               'customer_details' => $customerDetails,
+              'enabled_payments' => [
+                  'bank_transfer',
+                  'gopay',
+                  'qris',
+              ],
               'item_details' => [[
                   'id' => 'CUSTOM-' . $custom->id,
                   'price' => (int) $custom->estimasi_harga,
