@@ -153,24 +153,27 @@
               ];
           }
 
-          $transaction = Snap::createTransaction([
-              'transaction_details' => [
-                  'order_id' => $orderId,
-                  'gross_amount' => (int) $custom->estimasi_harga,
-              ],
-              'customer_details' => $customerDetails,
-              'enabled_payments' => [
-                  'bank_transfer',
-                  'gopay',
-                  'qris',
-              ],
-              'item_details' => [[
-                  'id' => 'CUSTOM-' . $custom->id,
-                  'price' => (int) $custom->estimasi_harga,
-                  'quantity' => 1,
-                  'name' => $custom->jenis_furniture,
-              ]],
-          ]);
+         $transaction = Snap::createTransaction([
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => (int) $custom->estimasi_harga,
+            ],
+            'customer_details' => $customerDetails,
+            'enabled_payments' => [
+                'gopay',
+                'bca_va',
+                'bni_va',
+                'bri_va',
+                'permata_va',
+                'other_va',
+            ],
+            'item_details' => [[
+                'id' => 'CUSTOM-' . $custom->id,
+                'price' => (int) $custom->estimasi_harga,
+                'quantity' => 1,
+                'name' => $custom->jenis_furniture,
+            ]],
+        ]);
 
           $custom->update($this->customPaymentUpdate([
               'snap_token' => $transaction->token,
