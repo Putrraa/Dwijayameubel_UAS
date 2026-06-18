@@ -112,7 +112,11 @@ class PaymentController extends Controller
                 ],
 
                 'customer_details' => $customerDetails,
-
+                'enabled_payments' => [
+                  'bank_transfer',
+                  'gopay',
+                  'qris',
+                ],
                 'item_details' => [
                     [
                         'id' => 'CUSTOM-' . $custom->id,
