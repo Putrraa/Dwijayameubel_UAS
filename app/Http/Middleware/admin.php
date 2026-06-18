@@ -16,10 +16,18 @@ class admin
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (!Auth::check()) {
+            return redirect('/login');
+        }
+
         if(Auth::user()->role=='admin'){
             return $next($request);
         }
 
-        return redirect('/login');
+        return match (Auth::user()->role) {
+            'kasir' => redirect()->route('kasir.index'),
+            'customer' => redirect()->route('customer.index'),
+            default => redirect('/login'),
+        };
     }
 }

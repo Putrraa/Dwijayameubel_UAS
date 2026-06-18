@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->trustProxies(at: '*');
 
+        $middleware->alias([
+            'redirect.non.customer' => \App\Http\Middleware\RedirectNonCustomerFromCustomerPages::class,
+        ]);
 
         $middleware->group('admin', [
             \Illuminate\Auth\Middleware\Authenticate::class,
