@@ -1,0 +1,547 @@
+diff --git a/app/Http/Controllers/Api/KasirCustomOrderApiController.php b/app/Http/Controllers/Api/KasirCustomOrderApiController.php
+index 1dbe342..c605150 100644
+--- a/app/Http/Controllers/Api/KasirCustomOrderApiController.php
++++ b/app/Http/Controllers/Api/KasirCustomOrderApiController.php
+@@ -68,7 +68,7 @@ class KasirCustomOrderApiController extends Controller
+         try {
+             $request->validate([
+                 'estimasi_harga' => 'required|numeric|min:0',
+-                'status' => ['required', Rule::in(['pending', 'diproses', 'selesai'])],
++                'status' => ['required', Rule::in(['pending', 'diproses'])],
+             ]);
+ 
+             $customOrder = CustomOrder::find($id);
+diff --git a/app/Http/Controllers/Api/KasirPesananApiController.php b/app/Http/Controllers/Api/KasirPesananApiController.php
+index e3b41e3..2f851e5 100644
+--- a/app/Http/Controllers/Api/KasirPesananApiController.php
++++ b/app/Http/Controllers/Api/KasirPesananApiController.php
+@@ -59,7 +59,7 @@ class KasirPesananApiController extends Controller
+     {
+         try {
+             $request->validate([
+-                'status' => 'required|in:1,2,3',
++                'status' => 'required|in:1,2',
+             ]);
+ 
+             $pesanan = DB::table('pesanan')->where('id', $id)->first();
+diff --git a/app/Http/Controllers/CustomOrderController.php b/app/Http/Controllers/CustomOrderController.php
+index 82e125e..1e1225c 100644
+--- a/app/Http/Controllers/CustomOrderController.php
++++ b/app/Http/Controllers/CustomOrderController.php
+@@ -67,12 +67,15 @@ class CustomOrderController extends Controller
+     return back()->with('success', 'Custom order berhasil dikirim');
+ }
+     // UPDATE STATUS + HARGA KASIR
++    // Kasir hanya boleh set status pending/diproses.
++    // Status "selesai" hanya bisa dikonfirmasi oleh customer sendiri
++    // lewat halaman riwayat (tombol "Barang Sudah Sampai").
+     public function status($id, Request $request)
+     {
+         $request->validate([
+ 
+             'estimasi_harga' => 'required|numeric',
+-            'status' => 'required',
++            'status' => ['required', \Illuminate\Validation\Rule::in(['pending', 'diproses'])],
+ 
+         ]);
+ 
+diff --git a/app/Http/Controllers/ProfileController.php b/app/Http/Controllers/ProfileController.php
+index 39a9798..e36fe4c 100644
+--- a/app/Http/Controllers/ProfileController.php
++++ b/app/Http/Controllers/ProfileController.php
+@@ -54,6 +54,73 @@ class ProfileController extends Controller
+         return redirect('/');
+     }
+ 
++    /**
++     * Update alamat/profil pengiriman User (Customer)
++     * Supaya saat checkout/custom order tidak perlu isi alamat berulang.
++     */
++    public function updateAddress(Request $request)
++    {
++        $request->validate([
++            'no_telepon' => 'required|string|max:20',
++            'alamat'     => 'required|string',
++            'kota'       => 'required|string|max:255',
++            'kode_pos'   => 'required|string|max:10',
++        ]);
++
++        $user = Auth::user();
++
++        $user->update([
++            'no_telepon' => $request->no_telepon,
++            'alamat'     => $request->alamat,
++            'kota'       => $request->kota,
++            'kode_pos'   => $request->kode_pos,
++        ]);
++
++        return back()->with('success', 'Alamat berhasil disimpan!');
++    }
++
++    /**
++     * Customer mengonfirmasi pesanan reguler sudah sampai/diterima.
++     * Status hanya bisa diubah jadi "Selesai" oleh customer sendiri,
++     * bukan oleh kasir.
++     */
++    public function terimaPesanan($id)
++    {
++        $pesanan = Pesanan::where('id', $id)
++            ->where('user_id', Auth::id())
++            ->where('status', 2) // hanya bisa dikonfirmasi jika sudah "Dikirim"
++            ->first();
++
++        if (!$pesanan) {
++            return back()->with('error', 'Pesanan tidak ditemukan atau belum bisa dikonfirmasi selesai.');
++        }
++
++        $pesanan->status = 3; // Selesai
++        $pesanan->save();
++
++        return back()->with('success', 'Terima kasih! Pesanan dikonfirmasi selesai.');
++    }
++
++    /**
++     * Customer mengonfirmasi custom order sudah sampai/diterima.
++     */
++    public function terimaCustomOrder($id)
++    {
++        $custom = CustomOrder::where('id', $id)
++            ->where('user_id', Auth::id())
++            ->where('status', 'diproses') // hanya bisa dikonfirmasi jika sedang diproses/dikirim
++            ->first();
++
++        if (!$custom) {
++            return back()->with('error', 'Custom order tidak ditemukan atau belum bisa dikonfirmasi selesai.');
++        }
++
++        $custom->status = 'selesai';
++        $custom->save();
++
++        return back()->with('success', 'Terima kasih! Custom order dikonfirmasi selesai.');
++    }
++
+     /**
+      * Update Password User
+      */
+diff --git a/app/Http/Controllers/pesanancontroller.php b/app/Http/Controllers/pesanancontroller.php
+index a641e2b..d435404 100644
+--- a/app/Http/Controllers/pesanancontroller.php
++++ b/app/Http/Controllers/pesanancontroller.php
+@@ -27,10 +27,13 @@ public function pesanan()
+ }
+ 
+ // 2. Memproses update status pesanan dari select dropdown kasir
++// Kasir hanya boleh set status Diproses(1)/Dikirim(2).
++// Status "Selesai" (3) hanya bisa dikonfirmasi oleh customer sendiri
++// lewat halaman riwayat (tombol "Barang Sudah Sampai").
+ public function updateStatus(Request $request, $id)
+ {
+     $request->validate([
+-        'status' => 'required|integer|in:1,2,3,4',
++        'status' => 'required|integer|in:1,2',
+     ]);
+ 
+     $pesanan = pesanan::findOrFail($id);
+diff --git a/app/Models/User.php b/app/Models/User.php
+index cc74357..737cfb1 100644
+--- a/app/Models/User.php
++++ b/app/Models/User.php
+@@ -22,6 +22,10 @@ class User extends Authenticatable
+         'email',
+         'password',
+         'role',
++        'no_telepon',
++        'alamat',
++        'kota',
++        'kode_pos',
+     ];
+ 
+     /**
+diff --git a/database/migrations/2026_06_21_000001_add_alamat_to_users_table.php b/database/migrations/2026_06_21_000001_add_alamat_to_users_table.php
+new file mode 100644
+index 0000000..336288f
+--- /dev/null
++++ b/database/migrations/2026_06_21_000001_add_alamat_to_users_table.php
+@@ -0,0 +1,25 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::table('users', function (Blueprint $table) {
++            $table->string('no_telepon')->nullable()->after('email');
++            $table->text('alamat')->nullable()->after('no_telepon');
++            $table->string('kota')->nullable()->after('alamat');
++            $table->string('kode_pos')->nullable()->after('kota');
++        });
++    }
++
++    public function down(): void
++    {
++        Schema::table('users', function (Blueprint $table) {
++            $table->dropColumn(['no_telepon', 'alamat', 'kota', 'kode_pos']);
++        });
++    }
++};
+diff --git a/resources/views/customer/chart.blade.php b/resources/views/customer/chart.blade.php
+index 9872c37..8e4d3cd 100644
+--- a/resources/views/customer/chart.blade.php
++++ b/resources/views/customer/chart.blade.php
+@@ -240,6 +240,7 @@
+                                 <input type="text"
+                                        name="nama_penerima"
+                                        class="form-control form-control-sm"
++                                       value="{{ Auth::user()->name }}"
+                                        required>
+                             </div>
+ 
+@@ -250,6 +251,7 @@
+                                 <input type="text"
+                                        name="no_telepon"
+                                        class="form-control form-control-sm"
++                                       value="{{ Auth::user()->no_telepon }}"
+                                        required>
+                             </div>
+ 
+@@ -260,7 +262,7 @@
+                                 <textarea name="alamat"
+                                           rows="2"
+                                           class="form-control form-control-sm"
+-                                          required></textarea>
++                                          required>{{ Auth::user()->alamat }}</textarea>
+                             </div>
+ 
+                             <div class="row">
+@@ -271,6 +273,7 @@
+                                     <input type="text"
+                                            name="kota"
+                                            class="form-control form-control-sm"
++                                           value="{{ Auth::user()->kota }}"
+                                            required>
+                                 </div>
+ 
+@@ -281,6 +284,7 @@
+                                     <input type="text"
+                                            name="kode_pos"
+                                            class="form-control form-control-sm"
++                                           value="{{ Auth::user()->kode_pos }}"
+                                            required>
+                                 </div>
+                             </div>
+diff --git a/resources/views/customer/custom.blade.php b/resources/views/customer/custom.blade.php
+index 0fd4d82..0adff09 100644
+--- a/resources/views/customer/custom.blade.php
++++ b/resources/views/customer/custom.blade.php
+@@ -145,7 +145,7 @@
+                             Nama Penerima <span class="required">*</span>
+                         </label>
+                         <input type="text" name="nama_penerima" id="nama_penerima"
+-                            value="{{ old('nama_penerima') }}"
++                            value="{{ old('nama_penerima', Auth::user()->name) }}"
+                             placeholder="Nama penerima pesanan"
+                             class="{{ $errors->has('nama_penerima') ? 'is-invalid' : '' }}"
+                             required>
+@@ -159,7 +159,7 @@
+                             No. Telepon <span class="required">*</span>
+                         </label>
+                         <input type="text" name="no_telepon" id="no_telepon"
+-                            value="{{ old('no_telepon') }}"
++                            value="{{ old('no_telepon', Auth::user()->no_telepon) }}"
+                             placeholder="Nomor yang bisa dihubungi"
+                             class="{{ $errors->has('no_telepon') ? 'is-invalid' : '' }}"
+                             required>
+@@ -175,7 +175,7 @@
+                         <textarea name="alamat" id="alamat"
+                             placeholder="Nama jalan, nomor rumah, RT/RW, kecamatan, dan detail lain"
+                             class="{{ $errors->has('alamat') ? 'is-invalid' : '' }}"
+-                            required>{{ old('alamat') }}</textarea>
++                            required>{{ old('alamat', Auth::user()->alamat) }}</textarea>
+                         @error('alamat')
+                             <span class="invalid-feedback">{{ $message }}</span>
+                         @enderror
+@@ -186,7 +186,7 @@
+                             Kota <span class="required">*</span>
+                         </label>
+                         <input type="text" name="kota" id="kota"
+-                            value="{{ old('kota') }}"
++                            value="{{ old('kota', Auth::user()->kota) }}"
+                             placeholder="Contoh: Jepara"
+                             class="{{ $errors->has('kota') ? 'is-invalid' : '' }}"
+                             required>
+@@ -200,7 +200,7 @@
+                             Kode Pos <span class="required">*</span>
+                         </label>
+                         <input type="text" name="kode_pos" id="kode_pos"
+-                            value="{{ old('kode_pos') }}"
++                            value="{{ old('kode_pos', Auth::user()->kode_pos) }}"
+                             placeholder="Contoh: 59411"
+                             class="{{ $errors->has('kode_pos') ? 'is-invalid' : '' }}"
+                             required>
+diff --git a/resources/views/kasir/index.blade.php b/resources/views/kasir/index.blade.php
+index 0d5c5da..ad140e9 100644
+--- a/resources/views/kasir/index.blade.php
++++ b/resources/views/kasir/index.blade.php
+@@ -127,6 +127,14 @@
+                             {{-- FORM HARGA + STATUS --}}
+                             <td colspan="2">
+ 
++                                @if($item->status == 'selesai')
++
++                                    <span class="badge bg-secondary">
++                                        Selesai (dikonfirmasi customer)
++                                    </span>
++
++                                @else
++
+                                 <form action="{{ route('custom.status', $item->id) }}"
+                                       method="POST"
+                                       class="d-flex gap-2 align-items-center">
+@@ -157,11 +165,6 @@
+                                             Diproses
+                                         </option>
+ 
+-                                        <option value="selesai"
+-                                            {{ $item->status == 'selesai' ? 'selected' : '' }}>
+-                                            Selesai
+-                                        </option>
+-
+                                     </select>
+ 
+                                     {{-- BUTTON --}}
+@@ -174,6 +177,8 @@
+ 
+                                 </form>
+ 
++                                @endif
++
+                                 {{-- TAMPIL HARGA --}}
+                                 @if($item->estimasi_harga)
+ 
+diff --git a/resources/views/kasir/pesanan.blade.php b/resources/views/kasir/pesanan.blade.php
+index 0381941..7b8d55a 100644
+--- a/resources/views/kasir/pesanan.blade.php
++++ b/resources/views/kasir/pesanan.blade.php
+@@ -90,6 +90,11 @@
+                                 </td>
+ 
+                                 <td>
++                                    @if($item->status == 3)
++                                        <span class="badge bg-secondary">
++                                            Selesai (dikonfirmasi customer)
++                                        </span>
++                                    @else
+                                     <form action="{{ route('pesanan.status', $item->id) }}" method="POST">
+                                         @csrf
+ 
+@@ -102,11 +107,9 @@
+                                             <option value="2" {{ $item->status == 2 ? 'selected' : '' }}>
+                                                 Dikirim
+                                             </option>
+-                                            <option value="3" {{ $item->status == 3 ? 'selected' : '' }}>
+-                                                Selesai
+-                                            </option>
+                                         </select>
+                                     </form>
++                                    @endif
+                                 </td>
+                             </tr>
+                         @empty
+diff --git a/resources/views/profile_c.blade.php b/resources/views/profile_c.blade.php
+index d14439f..02b3e5a 100644
+--- a/resources/views/profile_c.blade.php
++++ b/resources/views/profile_c.blade.php
+@@ -137,6 +137,85 @@
+ 
+                     </div>
+ 
++                    <hr>
++
++                    <h6 class="fw-bold mb-1">
++                        Alamat Pengiriman Tersimpan
++                    </h6>
++
++                    <p class="text-muted small mb-3">
++                        Isi sekali di sini, alamat ini akan otomatis terisi saat checkout maupun custom order.
++                    </p>
++
++                    <form action="{{ route('profile.address.update') }}" method="POST">
++                        @csrf
++                        @method('PUT')
++
++                        <div class="mb-3">
++                            <label class="form-label fw-bold small">
++                                Nomor Telepon
++                            </label>
++                            <input type="text"
++                                   name="no_telepon"
++                                   class="form-control custom-input @error('no_telepon') is-invalid @enderror"
++                                   value="{{ old('no_telepon', Auth::user()->no_telepon) }}"
++                                   placeholder="Contoh: 081234567890"
++                                   required>
++                            @error('no_telepon')
++                                <div class="invalid-feedback">{{ $message }}</div>
++                            @enderror
++                        </div>
++
++                        <div class="mb-3">
++                            <label class="form-label fw-bold small">
++                                Alamat Lengkap
++                            </label>
++                            <textarea name="alamat"
++                                      rows="2"
++                                      class="form-control custom-input @error('alamat') is-invalid @enderror"
++                                      placeholder="Nama jalan, nomor rumah, RT/RW, kecamatan"
++                                      required>{{ old('alamat', Auth::user()->alamat) }}</textarea>
++                            @error('alamat')
++                                <div class="invalid-feedback">{{ $message }}</div>
++                            @enderror
++                        </div>
++
++                        <div class="row">
++                            <div class="col-7 mb-3">
++                                <label class="form-label fw-bold small">
++                                    Kota
++                                </label>
++                                <input type="text"
++                                       name="kota"
++                                       class="form-control custom-input @error('kota') is-invalid @enderror"
++                                       value="{{ old('kota', Auth::user()->kota) }}"
++                                       required>
++                                @error('kota')
++                                    <div class="invalid-feedback">{{ $message }}</div>
++                                @enderror
++                            </div>
++
++                            <div class="col-5 mb-3">
++                                <label class="form-label fw-bold small">
++                                    Kode Pos
++                                </label>
++                                <input type="text"
++                                       name="kode_pos"
++                                       class="form-control custom-input @error('kode_pos') is-invalid @enderror"
++                                       value="{{ old('kode_pos', Auth::user()->kode_pos) }}"
++                                       required>
++                                @error('kode_pos')
++                                    <div class="invalid-feedback">{{ $message }}</div>
++                                @enderror
++                            </div>
++                        </div>
++
++                        <button type="submit" class="btn btn-dwj">
++                            Simpan Alamat
++                        </button>
++
++                    </form>
++
+                 </div>
+ 
+                 {{-- RIWAYAT PESANAN --}}
+@@ -220,13 +299,28 @@
+                                         @endif
+                                     </td>
+                                     <td>
+-                                        <button type="button"
+-                                                class="btn btn-dwj btn-sm btn-detail-pesanan"
+-                                                data-id="{{ $pesanan->id }}"
+-                                                data-bs-toggle="modal"
+-                                                data-bs-target="#modalDetailPesanan">
+-                                            Detail
+-                                        </button>
++                                        <div class="d-flex flex-column gap-1">
++                                            <button type="button"
++                                                    class="btn btn-dwj btn-sm btn-detail-pesanan"
++                                                    data-id="{{ $pesanan->id }}"
++                                                    data-bs-toggle="modal"
++                                                    data-bs-target="#modalDetailPesanan">
++                                                Detail
++                                            </button>
++
++                                            @if($pesanan->status == 2)
++                                            <form action="{{ route('pesanan.terima', $pesanan->id) }}"
++                                                  method="POST"
++                                                  onsubmit="return confirm('Konfirmasi barang sudah sampai?');">
++                                                @csrf
++                                                <button type="submit"
++                                                        class="btn btn-success btn-sm w-100">
++                                                    <i class="bi bi-check-circle me-1"></i>
++                                                    Barang Sampai
++                                                </button>
++                                            </form>
++                                            @endif
++                                        </div>
+                                     </td>
+ 
+                                 </tr>
+@@ -365,6 +459,7 @@
+                                     <th>Ukuran</th>
+                                     <th>Harga</th>
+                                     <th>Status</th>
++                                    <th>Aksi</th>
+ 
+                                 </tr>
+ 
+@@ -454,10 +549,6 @@
+ 
+                                         <div class="d-flex flex-column gap-2">
+ 
+-                                            <div class="fw-bold text-success">
+-                                                Rp {{ number_format($custom->estimasi_harga,0,',','.') }}
+-                                            </div>
+-
+                                             {{-- BUTTON BAYAR --}}
+                                             @if($custom->payment_status != 'paid')
+ 
+@@ -475,6 +566,19 @@
+                                                 Sudah Dibayar
+                                             </span>
+ 
++                                            @if($custom->status == 'diproses')
++                                            <form action="{{ route('custom.terima', $custom->id) }}"
++                                                  method="POST"
++                                                  onsubmit="return confirm('Konfirmasi barang sudah sampai?');">
++                                                @csrf
++                                                <button type="submit"
++                                                        class="btn btn-success btn-sm w-100">
++                                                    <i class="bi bi-check-circle me-1"></i>
++                                                    Barang Sampai
++                                                </button>
++                                            </form>
++                                            @endif
++
+                                             @endif
+ 
+                                         </div>
+@@ -495,7 +599,7 @@
+ 
+                                 <tr>
+ 
+-                                    <td colspan="5"
++                                    <td colspan="6"
+                                         class="text-center text-muted py-5">
+ 
+                                         Belum ada custom order
+diff --git a/routes/web.php b/routes/web.php
+index bf066f7..0d519ba 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -126,6 +126,15 @@ Route::get('/profile', [ProfileController::class, 'index'])->middleware('auth')-
+ Route::get('/profile/detail/{id}', [ProfileController::class, 'getDetail'])
+     ->middleware('auth')
+     ->name('profile.detail');
++Route::put('/profile/alamat', [ProfileController::class, 'updateAddress'])
++    ->middleware('auth')
++    ->name('profile.address.update');
++Route::post('/profile/pesanan/{id}/terima', [ProfileController::class, 'terimaPesanan'])
++    ->middleware('auth')
++    ->name('pesanan.terima');
++Route::post('/profile/custom-order/{id}/terima', [ProfileController::class, 'terimaCustomOrder'])
++    ->middleware('auth')
++    ->name('custom.terima');
+ Route::middleware(['auth', 'kasir'])->group(function () {
+     // --- 1. HALAMAN CUSTOM ORDER ---
+     Route::get('/custom-order', [CustomOrderController::class, 'index'])

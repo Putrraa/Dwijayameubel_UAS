@@ -16,10 +16,18 @@ class kasir
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (!Auth::check()) {
+            return redirect('/login');
+        }
+
         if(Auth::user()->role == 'kasir'){
             return $next($request);
         }
 
-        return redirect('/login');
+        return match (Auth::user()->role) {
+            'admin' => redirect()->route('barang.index'),
+            'customer' => redirect()->route('customer.index'),
+            default => redirect('/login'),
+        };
     }
 }

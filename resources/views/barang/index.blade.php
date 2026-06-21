@@ -65,7 +65,9 @@
                             </td>
 
                             <td class="text-center">
-                                @if($data->stok <= 5)
+                                @if($data->stok == 0)
+                                    <span class="text-warning fw-bold">{{ $data->stok }} (Habis)</span>
+                                @elseif($data->stok <= 5)
                                     <span class="text-danger fw-bold">{{ $data->stok }} (Hampir Habis)</span>
                                 @else
                                     {{ $data->stok }}

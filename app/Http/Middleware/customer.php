@@ -16,10 +16,18 @@ class customer
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (!Auth::check()) {
+            return redirect('/login');
+        }
+
         if(Auth::user()->role=='customer'){
             return $next($request);
         }
 
-        return redirect('/login');
+        return match (Auth::user()->role) {
+            'admin' => redirect()->route('barang.index'),
+            'kasir' => redirect()->route('kasir.index'),
+            default => redirect('/login'),
+        };
     }
 }

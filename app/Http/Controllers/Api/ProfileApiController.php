@@ -28,6 +28,8 @@ class ProfileApiController extends Controller
             ->latest()
             ->get()
             ->map(function ($item) {
+                $metodePembayaran = $item->metode_pembayaran ?: 'midtrans';
+
                 return [
                     'id' => $item->id,
                     'no_pesanan' => $item->kode ?? '#DWJ-' . $item->id,
@@ -36,6 +38,9 @@ class ProfileApiController extends Controller
                         : '-',
                     'total' => 'Rp ' . number_format($item->jumlah_harga ?? 0, 0, ',', '.'),
                     'status' => $this->formatStatusPesanan($item->status),
+                    'payment_status' => $item->payment_status ?: 'pending',
+                    'metode_pembayaran' => $metodePembayaran,
+                    'metode_label' => $this->formatMetodeBayar($metodePembayaran),
                 ];
             });
 
@@ -52,15 +57,25 @@ class ProfileApiController extends Controller
             ->latest()
             ->get()
             ->map(function ($item) {
+                $metodePembayaran = $item->metode_pembayaran ?? 'midtrans';
+
                 return [
                     'id' => $item->id,
                     'furniture_nama' => $item->jenis_furniture,
                     'kayu' => $item->jenis_kayu,
                     'ukuran' => $item->ukuran,
+                    'nama_penerima' => $item->nama_penerima,
+                    'no_telepon' => $item->no_telepon,
+                    'alamat' => $item->alamat,
+                    'kota' => $item->kota,
+                    'kode_pos' => $item->kode_pos,
                     'harga' => $item->estimasi_harga
                         ? 'Rp ' . number_format($item->estimasi_harga, 0, ',', '.')
                         : '-',
                     'status' => $this->formatStatusCustom($item->status),
+                    'payment_status' => $item->payment_status ?? 'pending',
+                    'metode_pembayaran' => $metodePembayaran,
+                    'metode_label' => $this->formatMetodeBayar($metodePembayaran),
 
                     // INI YANG PENTING
                     'gambar_url' => $item->gambar
@@ -78,12 +93,38 @@ class ProfileApiController extends Controller
 
     private function formatStatusCustom($status)
     {
+        return match ($status) {
+            'pending', 1 => 'pending',
+            'diproses', 2 => 'diproses',
+            'selesai', 3 => 'selesai',
+            'ditolak', 4 => 'ditolak',
+            default => 'pending',
+        };
+    }
+
+    private function formatStatusPesanan($status)
+    {
         return match ((int) $status) {
-            1 => 'Pending',
-            2 => 'Diproses',
+            1 => 'Diproses',
+            2 => 'Dikirim',
             3 => 'Selesai',
-            4 => 'Ditolak',
+            4 => 'Dibatalkan',
             default => 'Pending',
+        };
+    }
+
+    private function formatMetodeBayar($metode)
+    {
+        return match ($metode) {
+            'qris' => 'QRIS',
+            'gopay' => 'GoPay',
+            'bank_transfer' => 'Bank Transfer',
+            'bca_va' => 'BCA Virtual Account',
+            'bni_va' => 'BNI Virtual Account',
+            'bri_va' => 'BRI Virtual Account',
+            'permata_va' => 'Permata Virtual Account',
+            'midtrans' => 'Midtrans',
+            default => $metode ? strtoupper(str_replace('_', ' ', $metode)) : 'Midtrans',
         };
     }
 }
