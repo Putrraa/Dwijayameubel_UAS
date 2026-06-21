@@ -3,49 +3,46 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CustomOrder;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
-class KasirCustomOrderApiController extends Controller
+class KasirPesananApiController extends Controller
 {
     public function index()
     {
         try {
-            $data = CustomOrder::with('user')
-                ->latest()
+            $data = DB::table('pesanan')
+                ->where('status', '>=', 1)
+                ->orderByDesc('tanggal')
                 ->get()
                 ->map(function ($item) {
-                    $status = $this->normalizeStatus($item->status);
-
                     return [
                         'id' => $item->id,
-                        'customer' => $item->user->name ?? '-',
-                        'jenis_furniture' => $item->jenis_furniture,
-                        'jenis_kayu' => $item->jenis_kayu,
-                        'ukuran' => $item->ukuran,
-                        'catatan' => $item->catatan,
-
-                        'gambar_url' => $item->gambar
-                            ? asset('storage/' . str_replace(' ', '%20', $item->gambar))
+                        'kode' => $item->kode,
+                        'tanggal' => $item->tanggal
+                            ? date('Y-m-d H:i:s', strtotime($item->tanggal))
                             : null,
 
-                        'estimasi_harga' => $item->estimasi_harga
-                            ? (int) $item->estimasi_harga
-                            : null,
+                        'nama_penerima' => $item->nama_penerima,
+                        'no_telepon' => $item->no_telepon,
+                        'alamat' => $item->alamat,
+                        'kota' => $item->kota,
+                        'kode_pos' => $item->kode_pos,
 
-                        'harga' => $item->estimasi_harga
-                            ? 'Rp ' . number_format($item->estimasi_harga, 0, ',', '.')
-                            : '-',
+                        'jumlah_harga' => (int) ($item->jumlah_harga ?? 0),
+                        'total' => 'Rp ' . number_format($item->jumlah_harga ?? 0, 0, ',', '.'),
 
-                        'status' => $status,
-                        'status_label' => $this->statusLabel($status),
+                        'metode_pembayaran' => $item->metode_pembayaran,
+                        'metode_label' => $this->formatMetodeBayar($item->metode_pembayaran),
+
+                        'status' => (int) $item->status,
+                        'status_label' => $this->statusLabel((int) $item->status),
                     ];
                 });
 
             return response()->json([
                 'status' => true,
-                'message' => 'Data custom order berhasil diambil',
+                'message' => 'Data pesanan berhasil diambil',
                 'data' => $data
             ]);
 
@@ -58,30 +55,32 @@ class KasirCustomOrderApiController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function updateStatus(Request $request, $id)
     {
         try {
             $request->validate([
-                'estimasi_harga' => 'required|numeric|min:0',
-                'status' => ['required', Rule::in(['pending', 'diproses', 'selesai'])],
+                'status' => 'required|in:1,2',
             ]);
 
-            $customOrder = CustomOrder::find($id);
+            $pesanan = DB::table('pesanan')->where('id', $id)->first();
 
-            if (!$customOrder) {
+            if (!$pesanan) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Custom order tidak ditemukan'
+                    'message' => 'Pesanan tidak ditemukan'
                 ], 404);
             }
 
-            $customOrder->estimasi_harga = $request->estimasi_harga;
-            $customOrder->status = $request->status;
-            $customOrder->save();
+            DB::table('pesanan')
+                ->where('id', $id)
+                ->update([
+                    'status' => (int) $request->status,
+                    'updated_at' => now(),
+                ]);
 
             return response()->json([
                 'status' => true,
-                'message' => 'Custom order berhasil diperbarui'
+                'message' => 'Status pesanan berhasil diperbarui'
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -98,34 +97,22 @@ class KasirCustomOrderApiController extends Controller
         }
     }
 
-    private function normalizeStatus($status)
-    {
-        if ($status === 1 || $status === '1') {
-            return 'pending';
-        }
-
-        if ($status === 2 || $status === '2') {
-            return 'diproses';
-        }
-
-        if ($status === 3 || $status === '3') {
-            return 'selesai';
-        }
-
-        if (in_array($status, ['pending', 'diproses', 'selesai'])) {
-            return $status;
-        }
-
-        return 'pending';
-    }
-
     private function statusLabel($status)
     {
-        return match ($status) {
-            'pending' => 'Menunggu',
-            'diproses' => 'Diproses',
-            'selesai' => 'Selesai',
-            default => 'Menunggu',
+        return match ((int) $status) {
+            1 => 'Diproses',
+            2 => 'Dikirim',
+            3 => 'Selesai',
+            default => 'Diproses',
         };
+    }
+
+    private function formatMetodeBayar($metode)
+    {
+        if (!$metode) {
+            return 'BELUM ADA';
+        }
+
+        return strtoupper(str_replace('_', ' ', $metode));
     }
 }

@@ -55,6 +55,73 @@ class ProfileController extends Controller
     }
 
     /**
+     * Update alamat/profil pengiriman User (Customer)
+     * Supaya saat checkout/custom order tidak perlu isi alamat berulang.
+     */
+    public function updateAddress(Request $request)
+    {
+        $request->validate([
+            'no_telepon' => 'required|string|max:20',
+            'alamat'     => 'required|string',
+            'kota'       => 'required|string|max:255',
+            'kode_pos'   => 'required|string|max:10',
+        ]);
+
+        $user = Auth::user();
+
+        $user->update([
+            'no_telepon' => $request->no_telepon,
+            'alamat'     => $request->alamat,
+            'kota'       => $request->kota,
+            'kode_pos'   => $request->kode_pos,
+        ]);
+
+        return back()->with('success', 'Alamat berhasil disimpan!');
+    }
+
+    /**
+     * Customer mengonfirmasi pesanan reguler sudah sampai/diterima.
+     * Status hanya bisa diubah jadi "Selesai" oleh customer sendiri,
+     * bukan oleh kasir.
+     */
+    public function terimaPesanan($id)
+    {
+        $pesanan = Pesanan::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->where('status', 2) // hanya bisa dikonfirmasi jika sudah "Dikirim"
+            ->first();
+
+        if (!$pesanan) {
+            return back()->with('error', 'Pesanan tidak ditemukan atau belum bisa dikonfirmasi selesai.');
+        }
+
+        $pesanan->status = 3; // Selesai
+        $pesanan->save();
+
+        return back()->with('success', 'Terima kasih! Pesanan dikonfirmasi selesai.');
+    }
+
+    /**
+     * Customer mengonfirmasi custom order sudah sampai/diterima.
+     */
+    public function terimaCustomOrder($id)
+    {
+        $custom = CustomOrder::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->where('status', 'diproses') // hanya bisa dikonfirmasi jika sedang diproses/dikirim
+            ->first();
+
+        if (!$custom) {
+            return back()->with('error', 'Custom order tidak ditemukan atau belum bisa dikonfirmasi selesai.');
+        }
+
+        $custom->status = 'selesai';
+        $custom->save();
+
+        return back()->with('success', 'Terima kasih! Custom order dikonfirmasi selesai.');
+    }
+
+    /**
      * Update Password User
      */
     public function updatePassword(Request $request)
@@ -115,6 +182,12 @@ class ProfileController extends Controller
             )
             ->get();
 
+        $metodePembayaran = $pesanan->metode_pembayaran;
+
+        if ($pesanan->payment_status === 'paid' && (!$metodePembayaran || $metodePembayaran === 'midtrans')) {
+            $metodePembayaran = $this->syncMetodePembayaranFromMidtrans($pesanan) ?: $metodePembayaran ?: 'midtrans';
+        }
+
         return response()->json([
             'pesanan' => [
                 'kode' => $pesanan->kode,
@@ -124,8 +197,9 @@ class ProfileController extends Controller
                 'alamat' => $pesanan->alamat,
                 'kota' => $pesanan->kota,
                 'kode_pos' => $pesanan->kode_pos,
-                'metode_pembayaran' => $pesanan->metode_pembayaran
-                    ? strtoupper(str_replace('_', ' ', $pesanan->metode_pembayaran))
+                'payment_status' => $pesanan->payment_status,
+                'metode_pembayaran' => $metodePembayaran
+                    ? $this->formatMetodeBayar($metodePembayaran)
                     : 'BELUM ADA',
                 'catatan' => $pesanan->catatan,
             ],
@@ -138,5 +212,70 @@ class ProfileController extends Controller
             'error' => $e->getMessage()
         ], 500);
     }
+}
+
+private function syncMetodePembayaranFromMidtrans($pesanan)
+{
+    try {
+        \Midtrans\Config::$serverKey    = config('midtrans.server_key');
+        \Midtrans\Config::$isProduction = config('midtrans.is_production');
+        \Midtrans\Config::$isSanitized  = config('midtrans.is_sanitized');
+        \Midtrans\Config::$is3ds        = config('midtrans.is_3ds');
+
+        $status = \Midtrans\Transaction::status($pesanan->kode);
+        $metode = $this->resolveMidtransPaymentMethod($status, $status->payment_type ?? null);
+
+        if ($metode && $metode !== 'midtrans') {
+            \DB::table('pesanan')
+                ->where('id', $pesanan->id)
+                ->update([
+                    'metode_pembayaran' => $metode,
+                    'transaction_id' => $status->transaction_id ?? $pesanan->transaction_id,
+                    'updated_at' => now(),
+                ]);
+
+            return $metode;
+        }
+    } catch (\Exception $e) {
+        return null;
+    }
+
+    return null;
+}
+
+private function resolveMidtransPaymentMethod($source, $fallback = null)
+{
+    $paymentType = $source->payment_type ?? $fallback;
+
+    if ($paymentType === 'bank_transfer') {
+        $bank = null;
+
+        if (!empty($source->va_numbers) && isset($source->va_numbers[0]->bank)) {
+            $bank = $source->va_numbers[0]->bank;
+        } elseif (!empty($source->permata_va_number)) {
+            $bank = 'permata';
+        }
+
+        if ($bank) {
+            return strtolower($bank) . '_va';
+        }
+    }
+
+    return $paymentType ?: 'midtrans';
+}
+
+private function formatMetodeBayar($metode)
+{
+    return match ($metode) {
+        'qris' => 'QRIS',
+        'gopay' => 'GoPay',
+        'bank_transfer' => 'Bank Transfer',
+        'bca_va' => 'BCA Virtual Account',
+        'bni_va' => 'BNI Virtual Account',
+        'bri_va' => 'BRI Virtual Account',
+        'permata_va' => 'Permata Virtual Account',
+        'midtrans' => 'Midtrans',
+        default => strtoupper(str_replace('_', ' ', $metode)),
+    };
 }
 }

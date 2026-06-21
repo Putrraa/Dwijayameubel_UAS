@@ -137,6 +137,85 @@
 
                     </div>
 
+                    <hr>
+
+                    <h6 class="fw-bold mb-1">
+                        Alamat Pengiriman Tersimpan
+                    </h6>
+
+                    <p class="text-muted small mb-3">
+                        Isi sekali di sini, alamat ini akan otomatis terisi saat checkout maupun custom order.
+                    </p>
+
+                    <form action="{{ route('profile.address.update') }}" method="POST">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">
+                                Nomor Telepon
+                            </label>
+                            <input type="text"
+                                   name="no_telepon"
+                                   class="form-control custom-input @error('no_telepon') is-invalid @enderror"
+                                   value="{{ old('no_telepon', Auth::user()->no_telepon) }}"
+                                   placeholder="Contoh: 081234567890"
+                                   required>
+                            @error('no_telepon')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">
+                                Alamat Lengkap
+                            </label>
+                            <textarea name="alamat"
+                                      rows="2"
+                                      class="form-control custom-input @error('alamat') is-invalid @enderror"
+                                      placeholder="Nama jalan, nomor rumah, RT/RW, kecamatan"
+                                      required>{{ old('alamat', Auth::user()->alamat) }}</textarea>
+                            @error('alamat')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="row">
+                            <div class="col-7 mb-3">
+                                <label class="form-label fw-bold small">
+                                    Kota
+                                </label>
+                                <input type="text"
+                                       name="kota"
+                                       class="form-control custom-input @error('kota') is-invalid @enderror"
+                                       value="{{ old('kota', Auth::user()->kota) }}"
+                                       required>
+                                @error('kota')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-5 mb-3">
+                                <label class="form-label fw-bold small">
+                                    Kode Pos
+                                </label>
+                                <input type="text"
+                                       name="kode_pos"
+                                       class="form-control custom-input @error('kode_pos') is-invalid @enderror"
+                                       value="{{ old('kode_pos', Auth::user()->kode_pos) }}"
+                                       required>
+                                @error('kode_pos')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-dwj">
+                            Simpan Alamat
+                        </button>
+
+                    </form>
+
                 </div>
 
                 {{-- RIWAYAT PESANAN --}}
@@ -220,13 +299,28 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <button type="button"
-                                                class="btn btn-dwj btn-sm btn-detail-pesanan"
-                                                data-id="{{ $pesanan->id }}"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modalDetailPesanan">
-                                            Detail
-                                        </button>
+                                        <div class="d-flex flex-column gap-1">
+                                            <button type="button"
+                                                    class="btn btn-dwj btn-sm btn-detail-pesanan"
+                                                    data-id="{{ $pesanan->id }}"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalDetailPesanan">
+                                                Detail
+                                            </button>
+
+                                            @if($pesanan->status == 2)
+                                            <form action="{{ route('pesanan.terima', $pesanan->id) }}"
+                                                  method="POST"
+                                                  onsubmit="return confirm('Konfirmasi barang sudah sampai?');">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="btn btn-success btn-sm w-100">
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    Barang Sampai
+                                                </button>
+                                            </form>
+                                            @endif
+                                        </div>
                                     </td>
 
                                 </tr>
@@ -365,6 +459,7 @@
                                     <th>Ukuran</th>
                                     <th>Harga</th>
                                     <th>Status</th>
+                                    <th>Aksi</th>
 
                                 </tr>
 
@@ -454,12 +549,8 @@
 
                                         <div class="d-flex flex-column gap-2">
 
-                                            <div class="fw-bold text-success">
-                                                Rp {{ number_format($custom->estimasi_harga,0,',','.') }}
-                                            </div>
-
                                             {{-- BUTTON BAYAR --}}
-                                            @if($custom->status != 'selesai')
+                                            @if($custom->payment_status != 'paid')
 
                                             <a href="{{ route('payment.show', $custom->id) }}"
                                             class="btn btn-dwj btn-sm">
@@ -474,6 +565,19 @@
                                             <span class="badge bg-success">
                                                 Sudah Dibayar
                                             </span>
+
+                                            @if($custom->status == 'diproses')
+                                            <form action="{{ route('custom.terima', $custom->id) }}"
+                                                  method="POST"
+                                                  onsubmit="return confirm('Konfirmasi barang sudah sampai?');">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="btn btn-success btn-sm w-100">
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    Barang Sampai
+                                                </button>
+                                            </form>
+                                            @endif
 
                                             @endif
 
@@ -495,7 +599,7 @@
 
                                 <tr>
 
-                                    <td colspan="5"
+                                    <td colspan="6"
                                         class="text-center text-muted py-5">
 
                                         Belum ada custom order

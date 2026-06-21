@@ -51,6 +51,7 @@
                             <th>Kayu</th>
                             <th>Ukuran</th>
                             <th>Catatan</th>
+                            <th>Pengiriman</th>
                             <th>Gambar</th>
                             <th>Harga</th>
                             <th>Status</th>
@@ -89,6 +90,21 @@
                                 {{ $item->catatan }}
                             </td>
 
+                            <td style="min-width: 220px">
+                                <div class="fw-semibold">
+                                    {{ $item->nama_penerima ?? '-' }}
+                                </div>
+                                <div class="text-muted small">
+                                    {{ $item->no_telepon ?? '-' }}
+                                </div>
+                                <div class="small">
+                                    {{ $item->alamat ?? '-' }}
+                                </div>
+                                <div class="text-muted small">
+                                    Kota: {{ $item->kota ?? '-' }} ({{ $item->kode_pos ?? '-' }})
+                                </div>
+                            </td>
+
                             {{-- GAMBAR --}}
                             <td>
 
@@ -110,6 +126,14 @@
 
                             {{-- FORM HARGA + STATUS --}}
                             <td colspan="2">
+
+                                @if($item->status == 'selesai')
+
+                                    <span class="badge bg-secondary">
+                                        Selesai (dikonfirmasi customer)
+                                    </span>
+
+                                @else
 
                                 <form action="{{ route('custom.status', $item->id) }}"
                                       method="POST"
@@ -141,11 +165,6 @@
                                             Diproses
                                         </option>
 
-                                        <option value="selesai"
-                                            {{ $item->status == 'selesai' ? 'selected' : '' }}>
-                                            Selesai
-                                        </option>
-
                                     </select>
 
                                     {{-- BUTTON --}}
@@ -157,6 +176,8 @@
                                     </button>
 
                                 </form>
+
+                                @endif
 
                                 {{-- TAMPIL HARGA --}}
                                 @if($item->estimasi_harga)
@@ -177,7 +198,7 @@
 
                         <tr>
 
-                            <td colspan="9" class="text-center text-muted py-4">
+                            <td colspan="10" class="text-center text-muted py-4">
 
                                 Belum ada custom order
 

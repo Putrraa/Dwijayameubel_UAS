@@ -240,6 +240,7 @@
                                 <input type="text"
                                        name="nama_penerima"
                                        class="form-control form-control-sm"
+                                       value="{{ Auth::user()->name }}"
                                        required>
                             </div>
 
@@ -250,6 +251,7 @@
                                 <input type="text"
                                        name="no_telepon"
                                        class="form-control form-control-sm"
+                                       value="{{ Auth::user()->no_telepon }}"
                                        required>
                             </div>
 
@@ -260,7 +262,7 @@
                                 <textarea name="alamat"
                                           rows="2"
                                           class="form-control form-control-sm"
-                                          required></textarea>
+                                          required>{{ Auth::user()->alamat }}</textarea>
                             </div>
 
                             <div class="row">
@@ -271,6 +273,7 @@
                                     <input type="text"
                                            name="kota"
                                            class="form-control form-control-sm"
+                                           value="{{ Auth::user()->kota }}"
                                            required>
                                 </div>
 
@@ -281,6 +284,7 @@
                                     <input type="text"
                                            name="kode_pos"
                                            class="form-control form-control-sm"
+                                           value="{{ Auth::user()->kode_pos }}"
                                            required>
                                 </div>
                             </div>

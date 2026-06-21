@@ -135,6 +135,84 @@
 
                 <div class="divider"></div>
 
+                {{-- Section: Data Pengiriman --}}
+                <p class="form-section-title">Data Pengiriman</p>
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label for="nama_penerima">
+                            Nama Penerima <span class="required">*</span>
+                        </label>
+                        <input type="text" name="nama_penerima" id="nama_penerima"
+                            value="{{ old('nama_penerima', Auth::user()->name) }}"
+                            placeholder="Nama penerima pesanan"
+                            class="{{ $errors->has('nama_penerima') ? 'is-invalid' : '' }}"
+                            required>
+                        @error('nama_penerima')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="no_telepon">
+                            No. Telepon <span class="required">*</span>
+                        </label>
+                        <input type="text" name="no_telepon" id="no_telepon"
+                            value="{{ old('no_telepon', Auth::user()->no_telepon) }}"
+                            placeholder="Nomor yang bisa dihubungi"
+                            class="{{ $errors->has('no_telepon') ? 'is-invalid' : '' }}"
+                            required>
+                        @error('no_telepon')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="alamat">
+                            Alamat Lengkap <span class="required">*</span>
+                        </label>
+                        <textarea name="alamat" id="alamat"
+                            placeholder="Nama jalan, nomor rumah, RT/RW, kecamatan, dan detail lain"
+                            class="{{ $errors->has('alamat') ? 'is-invalid' : '' }}"
+                            required>{{ old('alamat', Auth::user()->alamat) }}</textarea>
+                        @error('alamat')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="kota">
+                            Kota <span class="required">*</span>
+                        </label>
+                        <input type="text" name="kota" id="kota"
+                            value="{{ old('kota', Auth::user()->kota) }}"
+                            placeholder="Contoh: Jepara"
+                            class="{{ $errors->has('kota') ? 'is-invalid' : '' }}"
+                            required>
+                        @error('kota')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="kode_pos">
+                            Kode Pos <span class="required">*</span>
+                        </label>
+                        <input type="text" name="kode_pos" id="kode_pos"
+                            value="{{ old('kode_pos', Auth::user()->kode_pos) }}"
+                            placeholder="Contoh: 59411"
+                            class="{{ $errors->has('kode_pos') ? 'is-invalid' : '' }}"
+                            required>
+                        @error('kode_pos')
+                            <span class="invalid-feedback">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                </div>
+
+                <div class="divider"></div>
+
                 {{-- Footer --}}
                 <div class="form-footer">
                     <span class="footer-note">

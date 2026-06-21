@@ -90,6 +90,11 @@
                                 </td>
 
                                 <td>
+                                    @if($item->status == 3)
+                                        <span class="badge bg-secondary">
+                                            Selesai (dikonfirmasi customer)
+                                        </span>
+                                    @else
                                     <form action="{{ route('pesanan.status', $item->id) }}" method="POST">
                                         @csrf
 
@@ -102,11 +107,9 @@
                                             <option value="2" {{ $item->status == 2 ? 'selected' : '' }}>
                                                 Dikirim
                                             </option>
-                                            <option value="3" {{ $item->status == 3 ? 'selected' : '' }}>
-                                                Selesai
-                                            </option>
                                         </select>
                                     </form>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

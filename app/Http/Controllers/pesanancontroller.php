@@ -27,10 +27,13 @@ public function pesanan()
 }
 
 // 2. Memproses update status pesanan dari select dropdown kasir
+// Kasir hanya boleh set status Diproses(1)/Dikirim(2).
+// Status "Selesai" (3) hanya bisa dikonfirmasi oleh customer sendiri
+// lewat halaman riwayat (tombol "Barang Sudah Sampai").
 public function updateStatus(Request $request, $id)
 {
     $request->validate([
-        'status' => 'required|integer|in:1,2,3,4',
+        'status' => 'required|integer|in:1,2',
     ]);
 
     $pesanan = pesanan::findOrFail($id);
@@ -238,11 +241,25 @@ public function bayar(Request $request)
 
     $total = $pesanan->detail->sum('jumlah_harga');
 
-    $kodeMidtrans = $pesanan->kode;
+    if ($pesanan->snap_token && $pesanan->payment_status === 'pending') {
+        $pesanan->update([
+            'jumlah_harga'      => $total,
+            'status'            => 1,
+            'nama_penerima'     => $request->nama_penerima,
+            'no_telepon'        => $request->no_telepon,
+            'alamat'            => $request->alamat,
+            'kota'              => $request->kota,
+            'kode_pos'          => $request->kode_pos,
+            'catatan'           => $request->catatan,
+        ]);
 
-    if (!$kodeMidtrans) {
-        $kodeMidtrans = 'ORD-' . $pesanan->id . '-' . time();
+        return response()->json([
+            'snap_token' => $pesanan->snap_token,
+            'kode'       => $pesanan->kode,
+        ]);
     }
+
+    $kodeMidtrans = 'ORD-' . $pesanan->id . '-' . now()->format('YmdHis') . '-' . random_int(1000, 9999);
 
     $pesanan->update([
         'kode'              => $kodeMidtrans,

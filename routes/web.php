@@ -31,28 +31,24 @@ Route::middleware('auth')->get('/redirect-role', function () {
     return redirect()->route('customer.index');
 
 });
-// Jika sekarang begini:
-Route::get('/admin', [barangcontroller::class, 'index'])->name('barang.index');
+Route::middleware('redirect.non.customer')->group(function () {
+    Route::get('/', [barangcontroller::class, 'home'])->name('customer.index');
+    Route::get('/detail/{id}', [barangcontroller::class, 'detail'])
+        ->name('customer.detail');
 
-// Kamu bisa biarkan saja, asal di barangcontroller sudah ditambah variabel $kategori seperti langkah 1 di atas.
+    // Route::get('/', [customercontroller::class, 'index'])->name('home');
+    // Route::get('/shop', [customercontroller::class, 'shop'])->name('customer.shop');
+    // Route::get('/about', [customercontroller::class, 'about'])->name('customer.about');
+    // Route::get('/contact', [customercontroller::class, 'contact'])->name('customer.contact');
 
-
-Route::get('/', [barangcontroller::class, 'home'])->name('customer.index');
-Route::get('/detail/{id}', [barangcontroller::class, 'detail'])
-    ->name('customer.detail');
-
-// Route::get('/', [customercontroller::class, 'index'])->name('home');
-// Route::get('/shop', [customercontroller::class, 'shop'])->name('customer.shop');
-// Route::get('/about', [customercontroller::class, 'about'])->name('customer.about');
-// Route::get('/contact', [customercontroller::class, 'contact'])->name('customer.contact');
-
-Route::get('/about', [barangcontroller::class, 'about'])->name('customer.about'); 
-Route::get('/shop/{kategori?}', [barangcontroller::class, 'shop'])->name('customer.shop');
-Route::get('/custom', [barangcontroller::class, 'custom'])->name('customer.custom');
-Route::get('/kategori/{slug}', [barangcontroller::class, 'kategori'])->name('customer.kategori');
-Route::get('/contact', [barangcontroller::class, 'contact'])->name('customer.contact'); 
-Route::post('/contact/send', [ContactController::class, 'send'])
-    ->name('contact.send');
+    Route::get('/about', [barangcontroller::class, 'about'])->name('customer.about'); 
+    Route::get('/shop/{kategori?}', [barangcontroller::class, 'shop'])->name('customer.shop');
+    Route::get('/custom', [barangcontroller::class, 'custom'])->name('customer.custom');
+    Route::get('/kategori/{slug}', [barangcontroller::class, 'kategori'])->name('customer.kategori');
+    Route::get('/contact', [barangcontroller::class, 'contact'])->name('customer.contact'); 
+    Route::post('/contact/send', [ContactController::class, 'send'])
+        ->name('contact.send');
+});
 Route::middleware(['auth', 'customer'])->group(function () {
 
     Route::post('/custom-orders', [barangcontroller::class, 'storeCustom'])
@@ -94,19 +90,12 @@ Route::middleware(['auth', 'customer'])->group(function () {
             ->name('payment.failed');
     });
 
-    // Midtrans webhook — tanpa CSRF
-    Route::post('/midtrans/callback', [PaymentController::class, 'callback'])
-        ->name('midtrans.callback');
-        
-
-
-
     // Route::post('/pesan/{id}', [pesanancontroller::class,'pesan'])->name('pesan')->middleware('auth');
     // Route::get('/keranjang', [pesanancontroller::class,'checkout'])->name('customer.keranjang');
     // Route::delete('/keranjang/{id}', [pesanancontroller::class,'hapus'])->name('keranjang.hapus');
     // Route::get('/barang/{id}', [barangcontroller::class, 'detail'])->name('barang.detail');
 });
-Route::post('/midtrans/callback', [pesanancontroller::class, 'midtransCallback'])
+Route::post('/midtrans/callback', [PaymentController::class, 'callback'])
     ->name('midtrans.callback');
 
 Route::middleware(['auth', 'admin'])->group(function () {
@@ -137,6 +126,15 @@ Route::get('/profile', [ProfileController::class, 'index'])->middleware('auth')-
 Route::get('/profile/detail/{id}', [ProfileController::class, 'getDetail'])
     ->middleware('auth')
     ->name('profile.detail');
+Route::put('/profile/alamat', [ProfileController::class, 'updateAddress'])
+    ->middleware('auth')
+    ->name('profile.address.update');
+Route::post('/profile/pesanan/{id}/terima', [ProfileController::class, 'terimaPesanan'])
+    ->middleware('auth')
+    ->name('pesanan.terima');
+Route::post('/profile/custom-order/{id}/terima', [ProfileController::class, 'terimaCustomOrder'])
+    ->middleware('auth')
+    ->name('custom.terima');
 Route::middleware(['auth', 'kasir'])->group(function () {
     // --- 1. HALAMAN CUSTOM ORDER ---
     Route::get('/custom-order', [CustomOrderController::class, 'index'])
