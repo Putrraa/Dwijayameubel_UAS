@@ -45,14 +45,14 @@
 
                         </button>
 
-                        <button class="nav-link mb-2 py-3 text-start px-4"
+                        {{-- <button class="nav-link mb-2 py-3 text-start px-4"
                                 data-bs-toggle="pill"
                                 data-bs-target="#pills-history">
 
                             <i class="bi bi-clock-history me-2"></i>
                             Riwayat Pesanan
 
-                        </button>
+                        </button> --}}
 
                         <button class="nav-link mb-2 py-3 text-start px-4"
                                 data-bs-toggle="pill"
@@ -219,7 +219,7 @@
                 </div>
 
                 {{-- RIWAYAT PESANAN --}}
-                <div class="tab-pane fade"
+                {{-- <div class="tab-pane fade"
                      id="pills-history">
 
                     <h4 class="fw-bold mb-1">
@@ -432,7 +432,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
                 {{-- CUSTOM ORDER --}}
                 <div class="tab-pane fade"
