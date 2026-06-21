@@ -44,6 +44,11 @@
                                 <i class="bi bi-person me-2"></i> Profile
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item py-2" href="{{ route('riwayat.pembelian') }}">
+                                <i class="bi bi-clock-history me-2"></i> Riwayat Pembelian
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="POST" action="{{ route('logout') }}">

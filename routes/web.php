@@ -51,6 +51,8 @@ Route::middleware('redirect.non.customer')->group(function () {
 });
 Route::middleware(['auth', 'customer'])->group(function () {
 
+    Route::get('/riwayat-pembelian', [ProfileController::class, 'riwayatPembelian'])
+        ->name('riwayat.pembelian');
     Route::post('/custom-orders', [barangcontroller::class, 'storeCustom'])
         ->name('custom-orders.store');
 

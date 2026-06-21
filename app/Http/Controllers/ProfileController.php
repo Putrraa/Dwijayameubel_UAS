@@ -53,7 +53,7 @@ class ProfileController extends Controller
 
         return redirect('/');
     }
-
+    
     /**
      * Update alamat/profil pengiriman User (Customer)
      * Supaya saat checkout/custom order tidak perlu isi alamat berulang.
@@ -84,6 +84,24 @@ class ProfileController extends Controller
      * Status hanya bisa diubah jadi "Selesai" oleh customer sendiri,
      * bukan oleh kasir.
      */
+    public function riwayatPembelian()
+    {
+        $user = auth()->user();
+
+        $riwayat_pesanan = Pesanan::where('user_id', $user->id)
+            ->where('status', '!=', 0)
+            ->orderBy('tanggal', 'desc')
+            ->get();
+
+        $custom_orders = CustomOrder::where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        return view('customer.riwayat_pembelian', compact(
+            'riwayat_pesanan',
+            'custom_orders'
+        ));
+    }
     public function terimaPesanan($id)
     {
         $pesanan = Pesanan::where('id', $id)
