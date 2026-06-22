@@ -44,7 +44,19 @@
                             data-bs-target="#modalDetailPesanan">
                         Detail
                     </button>
-
+                     @if($custom->status == 'dikirim')
+                                            <form action="{{ route('custom.terima', $custom->id) }}"
+                                                  method="POST"
+                                                  onsubmit="return confirm('Konfirmasi barang sudah sampai?');">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="btn btn-success btn-sm w-100">
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    Barang Sampai
+                                                </button>
+                                            </form>
+                                            @endif
+                    
                 </div>
 
             </div>
