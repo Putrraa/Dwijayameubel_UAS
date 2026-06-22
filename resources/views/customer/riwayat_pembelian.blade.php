@@ -75,16 +75,79 @@
     {{-- ================= CUSTOM ORDER ================= --}}
     <h5 class="mb-3">Custom Order</h5>
 
-    @forelse($custom_orders as $custom)
-        <div class="card mb-3 p-3 shadow-sm">
+    {{-- GANTI DENGAN INI --}}
+@forelse($custom_orders as $custom)
+    <div class="card mb-3 p-3 shadow-sm">
 
-            <div class="fw-bold">{{ $custom->jenis_furniture }}</div>
-            <div>Status: {{ ucfirst($custom->status) }}</div>
+        <div class="d-flex justify-content-between align-items-start">
 
+            <div>
+                <div class="fw-bold">{{ $custom->jenis_furniture }}</div>
+                <div class="text-muted small">
+                    Kayu: {{ $custom->jenis_kayu }} &nbsp;|&nbsp; Ukuran: {{ $custom->ukuran }}
+                </div>
+                <div class="fw-bold text-success mt-1">
+                    @if($custom->estimasi_harga)
+                        Rp {{ number_format($custom->estimasi_harga, 0, ',', '.') }}
+                    @else
+                        <span class="text-muted fw-normal">Menunggu estimasi</span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="text-end">
+
+                {{-- STATUS --}}
+                @if($custom->status == 'pending')
+                    <span class="badge bg-warning text-dark">Pending</span>
+                @elseif($custom->status == 'diproses')
+                    <span class="badge bg-primary">Diproses</span>
+                @elseif($custom->status == 'selesai')
+                    <span class="badge bg-secondary">Selesai</span>
+                @endif
+
+                <br><br>
+
+                {{-- TOMBOL AKSI --}}
+                @if($custom->estimasi_harga)
+                    @if($custom->payment_status != 'paid')
+                        <a href="{{ route('payment.show', $custom->id) }}"
+                           class="btn btn-sm btn-dwj">
+                            Bayar Sekarang
+                        </a>
+                    @else
+                        <span class="badge bg-success">Sudah Dibayar</span>
+                        @if($custom->status == 'diproses')
+                            <form action="{{ route('custom.terima', $custom->id) }}"
+                                  method="POST" class="mt-1"
+                                  onsubmit="return confirm('Konfirmasi barang sudah sampai?');">
+                                @csrf
+                                <button type="submit" class="btn btn-success btn-sm w-100">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    Barang Sampai
+                                </button>
+                            </form>
+                        @endif
+                    @endif
+                @else
+                    <span class="text-muted small">Menunggu estimasi</span>
+                @endif
+
+            </div>
         </div>
-    @empty
-        <p class="text-muted">Belum ada custom order.</p>
-    @endforelse
+
+        {{-- GAMBAR --}}
+        @if($custom->gambar)
+            <div class="mt-2">
+                <img src="{{ asset('storage/' . $custom->gambar) }}"
+                     width="80" class="rounded border">
+            </div>
+        @endif
+
+    </div>
+@empty
+    <p class="text-muted">Belum ada custom order.</p>
+@endforelse
 
 </div>
 

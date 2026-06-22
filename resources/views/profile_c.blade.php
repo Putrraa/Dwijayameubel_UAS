@@ -54,14 +54,14 @@
 
                         </button> --}}
 
-                        <button class="nav-link mb-2 py-3 text-start px-4"
+                        <!-- <button class="nav-link mb-2 py-3 text-start px-4"
                                 data-bs-toggle="pill"
                                 data-bs-target="#pills-custom">
 
                             <i class="bi bi-tools me-2"></i>
                             Custom Order
 
-                        </button>
+                        </button> -->
 
                         <button class="nav-link mb-2 py-3 text-start px-4"
                                 data-bs-toggle="pill"
@@ -434,7 +434,7 @@
                     </div>
                 </div> --}}
 
-                {{-- CUSTOM ORDER --}}
+                <!-- {{-- CUSTOM ORDER --}}
                 <div class="tab-pane fade"
                      id="pills-custom">
 
@@ -616,7 +616,7 @@
 
                     </div>
 
-                </div>
+                </div> -->
 
                 {{-- PASSWORD --}}
                 <div class="tab-pane fade"
